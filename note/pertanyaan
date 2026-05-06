@@ -1,0 +1,152 @@
+== intent rangking pelanggan 
+siapa pelanggan terbaik 3 bulan ini
+berikan 10 pelanggan terbaik 
+siapa saja pelanggan terbaik selama 2 bulan terakhir ini
+siapa pelanggan yang biasa saja dalam bulan ini
+siapa pelanggan yang sangat terbaik dalam bulan terakhir ini
+
+
+== intent tanya alasan 
+kenapa pelanggan itu menjadi pelanggan terbaik 
+kenapa 10 pelanggan itu menjadi paling terbaik, 
+jelaskan kenapa pelanggan ini dapat hadiah
+
+
+== intent tanya hadiah atau rekomendasi,
+apa ya kira kira hadiah yang cocok untuk pelanggan ini
+apa yang cocok untuk hadiah bagi pelanggan yang biasa aja 
+hadiah apa yang cocok untuk pelanggan sangat terbaik ini
+hadiah apa yang cocok untuk pelanggan terbaik ini selama 2 bulan ini
+
+
+
+
+
+
+
+== Intent Ranking Pelanggan 
+siapa pelanggan terbaik dalam 3 bulan terakhir ini
+tolong tampilkan pelanggan terbaik selama 3 bulan ini 
+berikan daftar 10 pelanggan terbaik saat ini 
+siapa saja pelanggan terbaik dalam 2 bulan terakhir 
+saya ingin melihat pelanggan terbaik selama bulan ini 
+tampilkan pelanggan yang paling terbaik dalam periode sekarang
+siapa pelanggan yang sangat terbaik dalam bulan terakhir ini
+tolong berikan daftar pelanggan terbaik 2 bulan terakhir
+pelanggan mana saja yang masuk kategori terbaik bulan ini
+tampilkan 10 pelanggan terbaik dalam 3 bulan terakhir
+siapa pelanggan yang biasa saja dalam bulan ini
+tampilkan pelanggan dengan kategori sangat terbaik sekarang
+siapa saja pelanggan terbaik pada periode terakhir ini
+berikan ranking pelanggan terbaik selama beberapa bulan terakhir
+saya ingin tahu pelanggan terbaik dalam periode bulan ini siapa ya
+
+
+== Intent Tanya Alasan
+kenapa pelanggan itu menjadi pelanggan terbaik
+apa alasan pelanggan tersebut masuk kategori terbaik
+kenapa pelanggan ini bisa menjadi sangat terbaik
+jelaskan alasan pelanggan itu mendapatkan peringkat terbaik
+mengapa pelanggan tersebut termasuk pelanggan terbaik
+apa yang membuat pelanggan ini menjadi pelanggan terbaik
+kenapa 10 pelanggan itu menjadi paling terbaik
+jelaskan kenapa pelanggan tersebut bisa masuk ranking terbaik
+alasan apa yang membuat pelanggan ini mendapatkan hadiah
+kenapa pelanggan ini termasuk kategori sangat terbaik
+apa penyebab pelanggan itu masuk pelanggan terbaik
+jelaskan alasan pelanggan ini masuk kategori biasa saja
+kenapa pelanggan tersebut mendapatkan peringkat tinggi
+apa alasan utama pelanggan ini menjadi pelanggan terbaik
+tolong jelaskan kenapa pelanggan ini bisa mendapatkan reward
+
+
+== Intent Tanya Rekomendasi Hadiah
+apa rekomendasi hadiah untuk pelanggan terbaik ini
+kira-kira pelanggan ini cocok diberi hadiah apa ya
+berikan rekomendasi hadiah untuk pelanggan terbaik
+saran hadiah untuk pelanggan sangat terbaik apa
+apa rekomendasi reward untuk pelanggan terbaik bulan ini
+kira-kira hadiah yang cocok untuk pelanggan ini apa
+tolong berikan saran hadiah untuk pelanggan terbaik
+rekomendasi hadiah yang pas untuk pelanggan biasa saja apa
+apa saran hadiah untuk pelanggan sangat terbaik
+kira-kira pelanggan terbaik ini cocok diberi reward apa
+berikan rekomendasi hadiah untuk pelanggan terbaik 2 bulan ini
+apa rekomendasi hadiah untuk pelanggan dalam kategori biasa saja
+saran hadiah terbaik untuk pelanggan terbaik apa ya
+kira-kira hadiah yang tepat untuk pelanggan ini apa
+tolong rekomendasikan hadiah untuk pelanggan terbaik sekarang
+apa ya kira kira hadiah yang cocok untuk pelanggan ini
+hadiah apa yang cocok untuk pelanggan terbaik ini
+kira kira hadiah yang layak untuk pelanggan ini apa ya
+apa yang cocok untuk hadiah bagi pelanggan yang biasa saja
+hadiah apa yang cocok untuk pelanggan sangat terbaik ini
+kira kira pelanggan ini cocok diberi hadiah apa
+apa hadiah yang pantas untuk pelanggan terbaik ini
+hadiah apa yang sebaiknya diberikan kepada pelanggan ini
+kira kira hadiah yang tepat untuk pelanggan terbaik bulan ini apa
+apa yang cocok untuk hadiah pelanggan terbaik selama 2 bulan ini
+hadiah apa yang layak untuk pelanggan sangat terbaik ini
+kira kira pelanggan kategori biasa saja cocok diberi hadiah apa
+apa hadiah yang cocok untuk pelanggan terbaik dalam periode ini
+hadiah apa yang sebaiknya diberikan untuk pelanggan terbaik sekarang
+kira kira hadiah yang pantas untuk pelanggan ini apa ya
+apa yang cocok diberikan sebagai hadiah untuk pelanggan terbaik ini
+hadiah apa yang tepat untuk pelanggan sangat terbaik selama bulan ini
+kira kira hadiah yang cocok untuk pelanggan dalam kategori ini apa
+apa hadiah yang layak diberikan kepada pelanggan terbaik tersebut
+kira kira hadiah apa yang cocok untuk pelanggan terbaik sekarang
+
+
+
+
+
+✅ Contoh Router Python
+if intent == "INT_RANGKING_PELANGGAN":
+    kategori = entities.get("KATEGORI_PELANGGAN")
+    periode = entities.get("TIME_EXPRESSION")
+    limit = entities.get("LIMIT")
+
+    return handle_rangking_pelanggan(kategori, periode, limit)
+
+hinano nakayama and keito kimura 
+
+
+
+| No | Kalimat                                                              | Intent                 |
+| -- | -------------------------------------------------------------------- | ---------------------- |
+| 1  | tolong tampilkan siapa pelanggan terbaik bulan ini                   | INT_RANKING_PELANGGAN  |
+| 2  | saya ingin melihat daftar pelanggan terbaik dalam dua bulan terakhir | INT_RANKING_PELANGGAN  |
+| 3  | siapa pelanggan dengan performa tertinggi saat ini                   | INT_RANKING_PELANGGAN  |
+| 4  | tampilkan ranking pelanggan terbaik periode sekarang                 | INT_RANKING_PELANGGAN  |
+| 5  | mohon berikan sepuluh pelanggan terbaik terbaru                      | INT_RANKING_PELANGGAN  |
+| 6  | siapa yang menjadi pelanggan terbaik dalam tiga bulan tgraphicerakhir       | INT_RANKING_PELANGGAN  |
+| 7  | berikan daftar pelanggan terbaik berdasarkan data terbaru            | INT_RANKING_PELANGGAN  |
+| 8  | pelanggan terbaik saat ini siapa saja                                | INT_RANKING_PELANGGAN  |
+| 9  | tolong cek pelanggan dengan nilai tertinggi sekarang                 | INT_RANKING_PELANGGAN  |
+| 10 | tampilkan pelanggan terbaik periode berjalan                         | INT_RANKING_PELANGGAN  |
+| 11 | kenapa pelanggan ini bisa menjadi pelanggan terbaik                  | INT_TANYA_ALASAN       |
+| 12 | apa alasan pelanggan tersebut mendapatkan ranking tertinggi          | INT_TANYA_ALASAN       |
+| 13 | mohon jelaskan mengapa pelanggan ini mendapatkan reward              | INT_TANYA_ALASAN       |
+| 14 | kenapa pelanggan tersebut berada di posisi pertama                   | INT_TANYA_ALASAN       |
+| 15 | apa yang membuat pelanggan ini unggul dari yang lain                 | INT_TANYA_ALASAN       |
+| 16 | jelaskan alasan pelanggan ini menjadi terbaik                        | INT_TANYA_ALASAN       |
+| 17 | kenapa pelanggan tersebut mendapatkan nilai tinggi                   | INT_TANYA_ALASAN       |
+| 18 | apa penyebab pelanggan ini masuk kategori terbaik                    | INT_TANYA_ALASAN       |
+| 19 | mohon jelaskan kenapa pelanggan tersebut mendapatkan hadiah          | INT_TANYA_ALASAN       |
+| 20 | apa alasan pelanggan ini menjadi unggulan utama                      | INT_TANYA_ALASAN       |
+| 21 | hadiah apa yang cocok untuk pelanggan terbaik                        | INT_REKOMENDASI_HADIAH |
+| 22 | tolong berikan saran reward untuk pelanggan terbaik bulan ini        | INT_REKOMENDASI_HADIAH |
+| 23 | kira kira hadiah yang pantas untuk pelanggan terbaik                 | INT_REKOMENDASI_HADIAH |
+| 24 | apa rekomendasi hadiah untuk pelanggan kategori terbaik              | INT_REKOMENDASI_HADIAH |
+| 25 | reward apa yang cocok diberikan kepada pelanggan terbaik             | INT_REKOMENDASI_HADIAH |
+| 26 | mohon sarankan hadiah yang tepat untuk pelanggan terbaik             | INT_REKOMENDASI_HADIAH |
+| 27 | hadiah apa yang sebaiknya diberikan kepada pelanggan unggulan        | INT_REKOMENDASI_HADIAH |
+| 28 | rekomendasi reward untuk pelanggan terbaik saat ini apa              | INT_REKOMENDASI_HADIAH |
+| 29 | kira kira pelanggan terbaik ini cocok diberi hadiah apa              | INT_REKOMENDASI_HADIAH |
+| 30 | berikan saran hadiah untuk pelanggan terbaik periode sekarang        | INT_REKOMENDASI_HADIAH |
+
+
+
+
+

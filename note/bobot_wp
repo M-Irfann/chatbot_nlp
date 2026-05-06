@@ -1,0 +1,42 @@
+ini kriteria metode wp saya 
+frekuensi sering cuci (C1)  = 0.40
+Jumlah Transaksi (C2) = 0.30
+Jenis Layanan Cuci (C3) = 0.20
+Nominal Pembayaran (C4) = 0.10
+
+
+jenis layanan 
+Cuci basah 1
+setrika Setrika 2
+Cuci Kering 3
+Cuci Lipat 4
+Cuci Setrika 5
+Cuci Selimut / Bed Cover 6
+
+
+di tabel database saya itu 
+ada nama, nominal, jenis_cuci, berat, tanggal
+
+untuk jenis_cuci itu jenis layanan yang di atas itu cuci basah itu levelnya 1 sampai cuci selimut itu tingkatnya lebih berat yaitu 6 
+nah kamu bisa berikan proses gitu weigted productnya 
+
+saya sudah siapkan 
+def weigted_product_proses():
+    conn = connection_db()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+      
+    finally:
+
+
+weigted_product_proses()
+
+
+
+
+
+
+jadi gini untuk spk pakai weighted product gitu 
+dan setelah pakai spk metode wp kan pakai treshold std gitukan untuk menentukan sangat terbaik, terbaik, biasa nah gimana ya  
+

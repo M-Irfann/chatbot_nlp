@@ -1,0 +1,89 @@
+A. Seleksi & Penentuan
+Tentukan_pelanggan_terbaik
+Tentukan_pelanggan_loyal
+Tentukan_pelanggan_prioritas
+Tentukan_penerima_reward
+Tentukan_pelanggan_aktif
+Tentukan_pelanggan_tidak_aktif
+Tentukan_pelanggan_potensial
+
+B. Pengelompokan
+Kelompokkan_pelanggan
+Klasifikasi_pelanggan
+Ranking_pelanggan
+Urutkan_pelanggan
+Daftar_pelanggan_prioritas
+Daftar_pelanggan_loyal
+
+C. Keputusan Reward
+Layak_reward 
+Cek_kelayakan_reward 
+Rekomendasi_reward 
+Penentuan_reward_pelanggan
+
+E. Alasan / Justifikasi 
+tanya_semua_alasan
+
+
+
+
+
+============================================================================================================================================================
+
+
+
+saya kan ada ini dataset dulu ini tapi agak kurang menurut saya ini saya ambil satu persatu intentnya gitu ini
+kalimat intent
+siapa pelanggan terbaik dalam x bulan ini	rekomendasi_pelanggan_terbaik
+kenapa pelanggan x layak dapat reward tanya_semua_alasan
+tampilkan pelanggan loyal x bulan ini	rekomendasi_pelanggan_loyal
+siapa yang paling sering cuci dalam x bulan ini	pelanggan_tersering
+siapa pelanggan paling tidak aktif	pelanggan_jarang
+hadiah yang cocok untuk pelanggan terbaik apa	rekomendasi_reward
+tampilkan jumlah pelanggan yang sering cuci di sini dalam x bulan ini 	jumlah_pelanggan
+ranking pelanggan selama x bulan terahir ini	ranking_pelanggan
+transaksi terbesar pelanggan siapa	pelanggan_transaksi_tertinggi
+siapa pelanggan prioritas dalam x bulan ini	pelanggan_prioritas
+tolong tampilkan siapa pelanggan terbaik bulan ini	rekomendasi_pelanggan_terbaik
+pelanggan paling setia x bulan ini siapa	rekomendasi_pelanggan_loyal
+customer paling sering cuci siapa	pelanggan_tersering
+pelanggan paling jarang cuci siapa	pelanggan_jarang
+rekomendasi hadiah customer terbaik	rekomendasi_reward
+jumlah pelanggan aktif berapa	jumlah_pelanggan
+customer yang paling loyal x bulan ini siapa ranking_pelanggan
+siapa pelanggan yang sering cuci disini dalam x bulan ini pelanggan_tersering
+kok bisa irfan menjadi pelanggan terbaik x bulan ini tanya_semua_alasan
+dan lain-lain.
+
+nah saya mau gitu intentnya sudah saya tulis ini 
+A. Seleksi & Penentuan
+Tentukan_pelanggan_terbaik
+Tentukan_pelanggan_loyal
+Tentukan_pelanggan_prioritas
+Tentukan_penerima_reward
+Tentukan_pelanggan_aktif
+Tentukan_pelanggan_tidak_aktif
+Tentukan_pelanggan_potensial
+
+B. Pengelompokan
+Kelompokkan_pelanggan
+Klasifikasi_pelanggan
+Ranking_pelanggan
+Urutkan_pelanggan
+Daftar_pelanggan_prioritas
+Daftar_pelanggan_loyal
+
+C. Keputusan Reward
+Layak_reward 
+Cek_kelayakan_reward 
+Rekomendasi_reward 
+Penentuan_reward_pelanggan
+
+E. Alasan / Justifikasi 
+tanya_semua_alasan
+
+
+
+bisa berikan dataset untuk naive bayes ini, tolong jangan terlalu kaku banget, struktur kalimatnya jelas dan tidak menyulitkan saat klasifikasi gitu agar mudah dalam pengklasifikasiannya gitu bisa berikan 100 dulu dalam bentuk tabel dan beri nomer 1 sampai sekian 
+
+dan karena ini untuk chatbot saya soalnya pakai nlp ini, jadi datasetnya harus benar dan tepat gitu kamu bisa bantu saya? berikan 100 dulu 

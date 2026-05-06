@@ -1,0 +1,404 @@
+CREATE TABLE pelanggan (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(100),
+    nominal INT,
+    jenis_cuci VARCHAR(100),
+    berat FLOAT,
+    tanggal DATE
+);
+
+CREATE TABLE dataset_intent (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kalimat VARCHAR(255),
+    intent VARCHAR(255)
+);
+
+
+CONTOH QUERY 
+SELECT COUNT(*) AS jumlah_cuci 
+FROM pelanggan 
+WHERE nama = "indah" 
+AND MONTH(tanggal) = 10
+AND YEAR(tanggal) = 2025;
+
+SELECT 
+    nama,
+    COUNT(*) AS jumlah_cuci,
+    SUM(nominal) AS total_nominal
+FROM pelanggan
+WHERE MONTH(tanggal) = 3
+AND YEAR(tanggal) = 2025
+GROUP BY nama
+ORDER BY jumlah_cuci DESC, total_nominal DESC;
+
+
+
+tumis orak arik
+bawang merah + putih 
+daun bawang
+garam
+gula dikit 
+masukan sosis
+orak arik telur 
+
+masukan nasi
+
+kasih bumbu racik 
+kecap asin,
+saus tomat
+saos tiram,
+masukan sayur 
+
+
+flow proses 
+
+User Input
+
+↓
+
+Naive Bayes
+(intent)
+
+↓
+
+CRF
+(entity: PERSON, TIME)
+
+↓
+
+Context Manager (memory sementara biar bisa mengingat)
+
+↓
+
+Action Function
+
+↓
+
+MySQL
+
+
+siapa pelanggan terbaik x bulan ini,
+bulan ini yang sering cuci siapa
+irfan cuci berapa kali 
+kenapa irfan dikategorikan dapat reward?
+
+
+
+
+
+
+
+================ untuk  entity extract 
+
+Pertanyaan bagus. Jawabannya:
+
+**kata seperti "siapa", "apa", "kenapa", "berapa" itu BUKAN entity.**
+
+Mereka disebut:
+
+# Question Word / Interrogative Word
+
+atau dalam NLP disebut:
+
+# Intent Indicator / Query Word
+
+---
+
+# 1. Contoh kalimat kamu:
+
+Kalimat:
+
+```text
+siapa pelanggan terbaik bulan ini
+```
+
+Breakdown yang benar:
+
+| Kata      | Label     |
+| --------- | --------- |
+| siapa     | QUESTION  |
+| pelanggan | OBJECT    |
+| terbaik   | STATUS    |
+| bulan     | TIME_UNIT |
+| ini       | TIME_REF  |
+
+---
+
+# 2. Kenapa "siapa" bukan entity utama?
+
+Karena:
+
+"siapa" tidak punya nilai data
+
+dia hanya menunjukkan jenis pertanyaan
+
+Contoh:
+
+Kalau sistem jawab:
+
+```text
+Irfan
+```
+
+"Irfan" → entity PERSON
+
+bukan "siapa"
+
+---
+
+# 3. Fungsi kata tanya dalam chatbot
+
+Kata tanya membantu menentukan:
+
+jenis jawaban
+
+Contoh:
+
+| Kata   | Jawaban    |
+| ------ | ---------- |
+| siapa  | nama orang |
+| berapa | angka      |
+| apa    | benda      |
+| kapan  | waktu      |
+
+---
+
+# 4. Dalam sistem kamu
+
+Naive Bayes sudah handle ini
+
+Contoh:
+
+```text
+siapa pelanggan terbaik
+```
+
+intent:
+
+```text
+rekomendasi_pelanggan_terbaik
+```
+
+jadi kamu tidak perlu ekstrak "siapa"
+
+---
+
+# 5. Yang wajib kamu ekstrak hanya ini:
+
+Untuk sistem laundry kamu:
+
+| Entity        | Contoh     |
+| ------------- | ---------- |
+| STATUS        | terbaik    |
+| TIME_NUMBER   | 3          |
+| TIME_UNIT     | bulan      |
+| TIME_REF      | ini        |
+| METRIC        | pendapatan |
+| CUSTOMER_TYPE | vip        |
+| PERSON        | irfan      |
+
+---
+
+# 6. "berapa" juga sama
+
+Kalimat:
+
+```text
+berapa total pendapatan bulan ini
+```
+
+Entity:
+
+```text
+METRIC = pendapatan
+TIME_UNIT = bulan
+TIME_REF = ini
+```
+
+"berapa" → tidak perlu disimpan
+
+---
+
+# 7. Tapi kalau mau, boleh juga simpan sebagai QUESTION
+
+Contoh:
+
+```python
+QUESTION_WORD = [
+
+"siapa",
+"berapa",
+"apa",
+"kapan"
+
+]
+```
+
+function:
+
+```python
+if word in QUESTION_WORD:
+
+    result["QUESTION"] = word
+```
+
+Output:
+
+```python
+{
+QUESTION: siapa,
+STATUS: terbaik,
+TIME_UNIT: bulan
+}
+```
+
+---
+
+# 8. Tapi di chatbot production biasanya TIDAK dipakai
+
+karena intent sudah cukup
+
+---
+
+# 9. Kesimpulan untuk sistem kamu
+
+Gunakan:
+
+Extract ini saja:
+
+```python
+STATUS
+TIME_NUMBER
+TIME_UNIT
+TIME_REF
+METRIC
+CUSTOMER_TYPE
+PERSON
+```
+
+JANGAN fokus ke:
+
+```python
+siapa
+apa
+berapa
+```
+
+---
+
+# 10. Struktur FINAL yang benar untuk chatbot kamu
+
+Contoh:
+
+Input:
+
+```text
+siapa pelanggan terbaik 3 bulan terakhir
+```
+
+Naive Bayes:
+
+```text
+intent:
+rekomendasi_pelanggan_terbaik
+```
+
+NER:
+
+```python
+entity:
+
+{
+STATUS: terbaik,
+TIME_NUMBER: 3,
+TIME_UNIT: bulan,
+TIME_REF: terakhir
+}
+```
+
+---
+
+# 11. Kalau mau saya bisa bantu buat
+
+dataset NER khusus laundry kamu
+
+500 kalimat
+
+yang siap training CRF
+
+supaya chatbot kamu level skripsi / production.
+
+
+
+
+
+
+
+
+
+saya perlu dataset untuk naive bayes untuk keperluan chatbot saya yaitu sistem pendukung keputusan pemberian reward pelanggan untuk meningkatkan loyalitas pelanggan gitu, untuk usaha laundry, nah saya pakai nlp juga yaitu metode naive bayes, nanti pertanyaannya seputar laundry, customer tidak ada akses untuk ini, cuman untuk ownernya saja kayak tanya contoh,
+
+siapa pelanggan terbaik bulan ini
+siapa pelanggan yang loyal x bulan ini
+siapa yang sering cuci
+siaoa pelanggan yang jarang cuci, 
+hadiah apa yang cocok untuk pelanggan terbaik x bulan ini 
+berapa pendapatan bulan ini 
+berapa total pelanggan yang cuci selama x bulan ini 
+dll.
+
+gitu kamu bisa berikan tidak ya agak supaya lengkap data untuk chatbot saya ini untuk naive bayes ini agar tidak salah gitu kamu bisa berikan gitu, kan di naive bayes ada kalimat dan intent kan, nah kamu bisa berikan tidak supaya tidak salah gitu data saya berikan 100 kalimat biar akurat dan presisi dan tidak salah gitu berikan dalam bentuk tabel dulu bisa?
+
+tidak sampai rekap rekap data tidak perlu, cuman seputar pelanggan,nominal, reward, perangkingan, loyalitas, dll, karena ini spk menentukan pelanggan begitu, bisa?
+
+
+
+
+
+Analoginya biar gampang
+
+Training = seperti guru ngajarin murid
+
+Dataset = buku pelajaran
+
+Model = murid
+
+Testing = ujian
+
+Chatbot = murid yang sudah pintar
+
+
+
+
+
+
+saya perlu dataset untuk NER CRF untuk keperluan chatbot saya yaitu sistem pendukung keputusan pemberian reward pelanggan untuk meningkatkan loyalitas pelanggan gitu, untuk usaha laundry, nah saya pakai nlp juga yaitu metode naive bayes, nanti pertanyaannya seputar laundry, customer tidak ada akses untuk ini, cuman untuk ownernya saja kayak tanya contoh,
+
+siapa pelanggan terbaik bulan ini
+siapa pelanggan yang loyal x bulan ini
+siapa yang sering cuci
+siaoa pelanggan yang jarang cuci, 
+hadiah apa yang cocok untuk pelanggan terbaik x bulan ini 
+berapa pendapatan bulan ini 
+berapa total pelanggan yang cuci selama x bulan ini 
+dll.
+
+gitu kamu bisa berikan tidak ya agak supaya lengkap data untuk chatbot saya ini untuk NER ini agar tidak salah gitu kamu bisa berikan gitu, kan di NER ada kayak bio barusan tadi kan, nah kamu bisa berikan tidak supaya tidak salah gitu data saya berikan 100 kalimat biar akurat dan presisi dan tidak salah gitu berikan dalam bentuk tabel dulu bisa?
+
+tidak sampai rekap rekap data tidak perlu, cuman seputar pelanggan,nominal, reward, perangkingan, loyalitas, dll, karena ini spk menentukan pelanggan begitu, bisa berikan 100 dulu bisa?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
