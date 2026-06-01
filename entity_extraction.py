@@ -1,8 +1,14 @@
 import re
+import pandas as pd
 from connection import connection_db
 
-def load_customer_names():
+# ==============================
+# CONFIG
+# ==============================
 
+DEBUG = False
+
+def load_customer_names():
     conn = connection_db()
     cursor = conn.cursor()
 
@@ -16,77 +22,40 @@ def load_customer_names():
 
 CUSTOMER_NAME = load_customer_names()
 
+# ==============================
+# MASTER DATA
+# ==============================
+
 STATUS = [
-    "terbaik",
-    "sangat terbaik",
-    "biasa",
-    "loyal",
-    "setia",
-    "aktif",
-    "pasif",
-    "sering",
-    "jarang",
-    "prioritas"
+    "sangat terbaik","terbaik","biasa","loyal","setia",
+    "aktif","pasif","sering","jarang","prioritas",
+    "unggulan","top","teratas","unggul",
+    "top customer","favorit","langganan",
+    "setia banget","tidak aktif","kurang aktif"
 ]
 
 NUMBER_WORDS = {
-    "satu": 1,
-    "dua": 2,
-    "tiga": 3,
-    "empat": 4,
-    "lima": 5,
-    "enam": 6,
-    "tujuh": 7,
-    "delapan": 8,
-    "sembilan": 9,
-    "sepuluh": 10,
-    "sebelas": 11,
-    "dua belas": 12,
-    "tiga belas": 13,
-    "empat belas": 14,
-    "lima belas": 15,
-    "enam belas": 16,
-    "tujuh belas": 17,
-    "delapan belas": 18,
-    "sembilan belas": 19,
-    "dua puluh": 20,
+    "dua puluh": 20,"sembilan belas": 19,"delapan belas": 18,"tujuh belas": 17,
+    "enam belas": 16,"lima belas": 15,"empat belas": 14,"tiga belas": 13,
+    "dua belas": 12,"sebelas": 11,"sepuluh": 10,"sembilan": 9,
+    "delapan": 8,"tujuh": 7,"enam": 6,"lima": 5,
+    "empat": 4,"tiga": 3,"dua": 2,"satu": 1
 }
 
-NUMBER_WORDS_SORTED = sorted(
-    NUMBER_WORDS.items(),
-    key=lambda x: len(x[0]),
-    reverse=True
-)
+TIME_EXPRESSION = list(set([
+    "awal tahun sampai sekarang",
+    "bulan ini","minggu ini","hari ini","tahun ini","saat ini",
+    "terakhir ini","terakhir","terahir","sekarang","kemarin",
+    "bulan lalu","minggu lalu","tahun lalu",
+    "periode ini","periode sekarang","periode berjalan","terbaru"
+]))
 
-TIME_EXPRESSION = [
-    "ini",
-    "lalu",
-    "terakhir",
-    "terahir",
-    "sekarang",
-    "kemarin",
-    "selama",
-    "saat",
-    "bulan ini",
-    "minggu ini",
-    "hari ini",
-    "saat ini",
-]
+TIME_UNIT = ["hari","minggu","bulan","tahun"]
+FREQUENCY = ["kali"]
 
 MONTH = [
     "januari","februari","maret","april","mei","juni",
     "juli","agustus","september","oktober","november","desember"
-]
-
-FREQUENCY = [
-    "kali"
-]
-
-TIME_UNIT = [
-    "hari",
-    "minggu",
-    "bulan",
-    "tahun"
 ]
 
 METRIC = [
@@ -94,151 +63,258 @@ METRIC = [
     "transaksi","frekuensi","jumlah","total"
 ]
 
+METRIC_NORMALIZATION = {
+    "omset": "pendapatan",
+    "penghasilan": "pendapatan",
+    "income": "pendapatan",
+    "frekuensi": "transaksi",
+    "jumlah": "total"
+}
+
 TRANSACTION_TYPE = [
-    "cuci",
-    "laundry",
-    "setrika",
-    "cuci setrika",
-    "kiloan",
-    "satuan"
+    "cuci setrika","cuci","laundry","setrika","kiloan","satuan"
 ]
 
 COMPARISON = [
-    "terbanyak",
-    "tertinggi",
-    "terendah",
-    "paling",
-    "lebih",
-    "kurang"
+    "terbanyak","tertinggi","terendah","paling","lebih","kurang"
 ]
 
-REWARD = [
-    "hadiah",
-    "reward",
-    "bonus",
-    "diskon",
-    "voucher"
-]
+REWARD = ["hadiah","reward","bonus","diskon","voucher"]
 
 REASON = [
-    "kenapa",
-    "mengapa",
-    "alasan",
-    "penyebab",
-    "faktor"
+    "apa yang menyebabkan","apa yang membuat","apa penyebabnya",
+    "kenapa","mengapa","alasan","penyebab","faktor"
 ]
 
-DATE_PATTERN = r"\b\d{1,2}\s(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s\d{4}\b"
+# ==============================
+# REGEX
+# ==============================
 
+DATE_PATTERN = r"\b\d{1,2}\s(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s\d{4}\b"
 YEAR_PATTERN = r"\b20\d{2}\b"
 
 RESULT_COUNT_PATTERN = r"\b(\d+)\s+pelanggan\b"
-
 TIME_VALUE_PATTERN = r"\b(\d+)\s+(hari|minggu|bulan|tahun)\b"
+TOP_N_PATTERN = r"\b(top\s*\d+|\d+\s*(teratas|terbaik|top))\b"
+
+# ==============================
+# SORTING
+# ==============================
 
 STATUS_SORTED = sorted(STATUS, key=len, reverse=True)
+TIME_EXPRESSION_SORTED = sorted(TIME_EXPRESSION, key=len, reverse=True)
+NUMBER_WORDS_SORTED = sorted(NUMBER_WORDS.items(), key=lambda x: len(x[0]), reverse=True)
 
+CURRENT_TIME = ["bulan ini","minggu ini","tahun ini","hari ini","saat ini","sekarang"]
+LAST_TIME = ["terakhir","terakhir ini","terahir"]
 
-def extract_list(text, data):
+STATUS_NORMALIZATION = {
+    "top customer": "terbaik",
+    "top": "terbaik",
+    "teratas": "terbaik",
+    "unggul": "terbaik",
+    "unggulan": "terbaik"
+}
 
-    result = []
+TIME_EXPRESSION_NORMALIZATION = {
+    "terakhir ini": "terakhir",
+    "terahir": "terakhir"
+}
 
-    data_sorted = sorted(data, key=len, reverse=True)
+TIME_NORMALIZATION_MAP = {
+    "hari ini": "today",
+    "minggu ini": "this_week",
+    "bulan ini": "this_month",
+    "tahun ini": "this_year",
+    "kemarin": "yesterday",
+    "minggu lalu": "last_week",
+    "bulan lalu": "last_month",
+    "tahun lalu": "last_year",
+    "sekarang": "now",
+    "saat ini": "now",
+    "terakhir": "recent",
+    "periode ini": "current_period",
+    "periode sekarang": "current_period",
+    "periode berjalan": "current_period",
+    "terbaru": "latest"
+}
 
-    for item in data_sorted:
-
-        pattern = r'\b' + re.escape(item) + r'\b' 
-
+def extract_customer_name(text, customer_list):
+    for name in customer_list:
+        pattern = r'\b' + re.escape(name) + r'\b'
         if re.search(pattern, text):
+            return [name]
+    return []
+# ==============================
+# CLEAN TEXT
+# ==============================
+
+def replace_number_words(text):
+    for word, num in NUMBER_WORDS_SORTED:
+        text = re.sub(r'\b' + word + r'\b', str(num), text)
+    return text
+
+def clean_text(text):
+    text = text.lower()
+    text = replace_number_words(text)
+    text = re.sub(r"[^\w\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+# ==============================
+# GENERIC EXTRACT
+# ==============================
+
+def extract_single(text, data):
+    for item in sorted(data, key=len, reverse=True):
+        if re.search(r'\b' + re.escape(item) + r'\b', text):
+            return [item]
+    return []
+
+def extract_multiple(text, data):
+    result = []
+    temp_text = text
+
+    for item in sorted(data, key=len, reverse=True):
+        pattern = r'\b' + re.escape(item) + r'\b'
+        match = re.search(pattern, temp_text)
+
+        if match:
             result.append(item)
-            break
+            temp_text = re.sub(pattern, ' ', temp_text)
 
     return result
 
-
-def extract_regex(text, pattern):
-
-    return re.findall(pattern, text)
-
+# ==============================
+# MAIN FUNCTION
+# ==============================
 
 def extract_entities(text):
 
-    text = text.lower()
-
+    text = clean_text(text)
     entities = {}
 
-    entities["CUSTOMER_NAME"] = extract_list(text, CUSTOMER_NAME)
+    # =================
+    # CUSTOMER
+    # =================
+    # entities["CUSTOMER_NAME"] = extract_single(text, CUSTOMER_NAME)
+    entities["CUSTOMER_NAME"] = extract_customer_name(text, CUSTOMER_NAME)
 
-    entities["STATUS"] = extract_list(text, STATUS_SORTED)
+    # =================
+    # STATUS
+    # =================
+    status = extract_multiple(text, STATUS_SORTED)
 
-    entities["TIME_EXPRESSION"] = extract_list(text, TIME_EXPRESSION)
-    
-    entities["TIME_UNIT"] = extract_list(text, TIME_UNIT)
+    normalized_status = []
+    intensity = []
 
-    if entities.get('TIME_EXPRESSION'):
-        exp = entities["TIME_EXPRESSION"][0]
+    for raw in status:
+        temp = raw
 
-        if exp in ["bulan ini", "minggu ini", "tahun ini", "hari ini", "saat ini", "sekarang"]:
-            entities["TIME_UNIT"] = []
+        if "sangat" in temp:
+            intensity.append("sangat")
+            temp = temp.replace("sangat", "").strip()
+        else:
+            intensity.append(None)
 
-    entities["FREQUENCY"] = extract_list(text, FREQUENCY)
+        normalized = STATUS_NORMALIZATION.get(temp, temp)
+        normalized_status.append(normalized)
 
-    entities["MONTH"] = extract_list(text, MONTH)
+    entities["STATUS_RAW"] = status
+    entities["STATUS"] = normalized_status
+    entities["INTENSITY"] = intensity
 
-    entities["METRIC"] = extract_list(text, METRIC)
+    # =================
+    # BASIC
+    # =================
+    entities["FREQUENCY"] = extract_single(text, FREQUENCY)
+    entities["MONTH"] = extract_single(text, MONTH)
 
-    entities["TRANSACTION_TYPE"] = extract_list(text, TRANSACTION_TYPE)
+    metric = extract_single(text, METRIC)
+    if metric:
+        metric = [METRIC_NORMALIZATION.get(metric[0], metric[0])]
+    entities["METRIC"] = metric
 
-    entities["COMPARISON"] = extract_list(text, COMPARISON)
+    entities["TRANSACTION_TYPE"] = extract_single(text, TRANSACTION_TYPE)
+    entities["COMPARISON"] = extract_single(text, COMPARISON)
+    entities["REWARD"] = extract_single(text, REWARD)
+    entities["REASON"] = extract_single(text, REASON)
 
-    entities["REWARD"] = extract_list(text, REWARD)
+    entities["DATE"] = re.findall(DATE_PATTERN, text)
+    entities["YEAR"] = re.findall(YEAR_PATTERN, text)
 
-    entities["REASON"] = extract_list(text, REASON)
+    # =================
+    # RESULT COUNT
+    # =================
+    result = re.findall(RESULT_COUNT_PATTERN, text)
+    top = re.findall(TOP_N_PATTERN, text)
 
-    entities["DATE"] = extract_regex(text, DATE_PATTERN)
+    result = [int(x) for x in result]
 
-    entities["YEAR"] = extract_regex(text, YEAR_PATTERN)
+    for match in top:
+        num = re.findall(r'\d+', match[0])
+        if num:
+            result.append(int(num[0]))
 
-    # RESULT COUNT (contoh: 10 pelanggan)
-    digit_result = extract_regex(text, RESULT_COUNT_PATTERN)
+    entities["RESULT_COUNT"] = sorted(set(result)) or [10]
 
-    word_result = []
-
-    for word, number in NUMBER_WORDS_SORTED:
-        pattern = r'\b' + word + r'\s+pelanggan\b'
-        if re.search(pattern, text):
-            word_result.append(str(number))
-
-    entities["RESULT_COUNT"] = list(set(digit_result + word_result))
-
-    # TIME VALUE (contoh: 2 bulan)
+    # =================
+    # TIME VALUE
+    # =================
     time_values = re.findall(TIME_VALUE_PATTERN, text)
-    time_digit = [t[0] for t in time_values]
+    entities["TIME_VALUE"] = [int(t[0]) for t in time_values]
+    entities["TIME_UNIT"] = [t[1] for t in time_values]
 
-    time_word = []
-
-    for word, number in NUMBER_WORDS_SORTED:
+    # =================
+    # 🔥 FIX UTAMA: "bulan terakhir", dll
+    # =================
+    if not entities["TIME_VALUE"]:
         for unit in TIME_UNIT:
-            pattern = r'\b' + word + r'\s+' + unit + r'\b'
+            pattern = rf"\b{unit}\s+(terakhir|terakhir ini|terahir)\b"
             if re.search(pattern, text):
-                time_word.append(str(number))
+                entities["TIME_VALUE"] = [1]
+                entities["TIME_UNIT"] = [unit]
+                break
 
-    entities["TIME_VALUE"] = list(set(time_digit + time_word))
+    # =================
+    # TIME EXPRESSION
+    # =================
+    entities["TIME_EXPRESSION"] = extract_multiple(text, TIME_EXPRESSION_SORTED)
+
+    if entities["TIME_EXPRESSION"]:
+        entities["TIME_EXPRESSION"] = [
+            TIME_EXPRESSION_NORMALIZATION.get(exp, exp)
+            for exp in entities["TIME_EXPRESSION"]
+        ]
+
+    # =================
+    # PRIORITAS VALUE
+    # =================
+    if entities["TIME_VALUE"]:
+        entities["TIME_EXPRESSION"] = []
+
+    # =================
+    # TIME NORMALIZED
+    # =================
+    time_normalized = None
+
+    if entities["TIME_VALUE"] and entities["TIME_UNIT"]:
+        time_normalized = f"last_{entities['TIME_VALUE'][0]}_{entities['TIME_UNIT'][0]}"
+
+    elif entities["TIME_EXPRESSION"]:
+        exp = entities["TIME_EXPRESSION"][0]
+        time_normalized = TIME_NORMALIZATION_MAP.get(exp)
+
+    entities["TIME_NORMALIZED"] = time_normalized
+
+    # =================
+    # CLEAN LOGIC
+    # =================
+    if entities["REASON"]:
+        entities["RESULT_COUNT"] = []
+
+    if DEBUG:
+        print("TEXT:", text)
+        print("ENTITIES:", entities)
 
     return entities
-
-
-# TESTING
-
-# text = "berikan sebelas pelanggan yang sangat terbaik dalam 2 bulan terakhir ini"
-
-# print(text)
-
-# hasil = extract_entities(text.lower().strip())
-
-# print("\nHASIL ENTITY:")
-
-# for key, value in hasil.items():
-
-#     if value:
-#         print(key, ":", value)

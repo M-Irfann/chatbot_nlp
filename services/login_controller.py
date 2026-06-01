@@ -1,0 +1,59 @@
+from flask import render_template, request, redirect, session
+from connection import connection_db
+
+def login_controller():
+
+    # =========================
+    # SUDAH LOGIN
+    # =========================
+    if session.get("is_login"):
+        return redirect("/dashboard")
+
+    # =========================
+    # GET
+    # =========================
+    if request.method == "GET":
+        return render_template("pages/login.html")
+
+    # =========================
+    # POST
+    # =========================
+    email = request.form["email"]
+    password = request.form["password"]
+
+    conn = connection_db()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT *
+        FROM users
+        WHERE email = %s
+        AND password = %s
+    """
+
+    values = (email, password)
+
+    cursor.execute(query, values)
+
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    # =========================
+    # LOGIN GAGAL
+    # =========================
+    if not user:
+        return render_template(
+            "pages/login.html",
+            error="Email atau password salah"
+        )
+
+    # =========================
+    # SESSION LOGIN
+    # =========================
+    session["is_login"] = True
+    session["user_id"] = user["id"]
+    session["email"] = user["email"]
+
+    return redirect("/dashboard")

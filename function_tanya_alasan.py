@@ -1,3 +1,4 @@
+
 import session_store
 import uuid
 
@@ -5,13 +6,10 @@ import uuid
 # GLOBAL CONTEXT
 # =========================
 def build_global_context(data):
-
     if not data:
         return None
-
     avg_freq = sum(r["frekuensi"] for r in data) / len(data)
     avg_nominal = sum(r["total_nominal"] for r in data) / len(data)
-
     return {
         "avg_freq": avg_freq,
         "avg_nominal": avg_nominal,
@@ -21,25 +19,23 @@ def build_global_context(data):
 # REASON ENGINE
 # =========================
 def build_reason(row, context):
-
-    alasan = []
-
     if not context:
-        return "karena data tidak tersedia"
+        return "data tidak tersedia"
 
-    if row["frekuensi"] > context["avg_freq"]:
-        alasan.append("frekuensi transaksi di atas rata-rata")
+    frekuensi = row.get("frekuensi", 0)
+    total_nominal = row.get("total_nominal", 0)
+    total_transaksi = row.get("total_transaksi", 0)
+    nilai_wp = row.get("nilai_wp", 0)
 
-    if row["total_nominal"] > context["avg_nominal"]:
-        alasan.append("total belanja lebih tinggi")
-
-    if row["frekuensi"] >= context["avg_freq"] * 1.5:
-        alasan.append("sangat aktif bertransaksi")
-
-    if not alasan:
-        alasan.append("memiliki pola transaksi normal/stabil")
-
-    return "karena " + ", ".join(alasan)
+    alasan = (
+        f"karena memiliki frekuensi transaksi sebanyak "
+        f"{frekuensi:.0f} kali, "
+        f"jumlah transaksi {total_transaksi:.1f} kg, "
+        f"total nominal Rp {total_nominal:,.0f}, "
+        f"dan nilai weighted product "
+        f"{nilai_wp:.3f}"
+    )
+    return alasan
 
 # =========================         
 # MAIN HANDLER
@@ -48,34 +44,47 @@ def handle_tanya_alasan(entities):
     reply_id = entities.get("REPLY_ID")
     store = None
 
-    # 1. Cari berdasarkan Reply ID
+    # 1. Bersihkan format string ID-nya biar gak miss saat dicocokkan
+    if reply_id:
+        reply_id = str(reply_id).strip().lower()
+
+    # 2. PROSES CARI BERDASARKAN REPLY ID
     if reply_id:
         for item in reversed(session_store.CHAT_HISTORY):
-            if str(item.get("id")) == str(reply_id):
+            item_id = str(item.get("id", "")).strip().lower()
+            if item_id == reply_id:
                 store = item
                 break
     
-    # 2. Fallback: Ambil history terakhir jika tidak ada reply
+    # 3. FALLBACK AMAN: Kalau gak klik reply / ID gak ketemu, ambil data master ranking terakhir (bukan data penjelasan)
     if not store and session_store.CHAT_HISTORY:
-        store = session_store.CHAT_HISTORY[-1]
+        for item in reversed(session_store.CHAT_HISTORY):
+            if item.get("type") != "explanation":
+                store = item
+                break
 
     if not store:
-        return {"message": "Silakan tampilkan daftar ranking dulu atau klik reply pada daftar."}
+        return {"message": "Silakan tampilkan daftar ranking dulu atau gunakan fitur reply."}
 
-
-    # Ambil data dari store
+    # Ambil data dari store yang terpilih
     periode = store.get("periode", {})
     raw_data = store.get("data", {})
     all_data = []
 
-    # UNWRAPPING
+    # UNWRAP DATA
     try:
         if isinstance(raw_data, dict):
-            for k, v in raw_data.items():
-                if isinstance(v, dict) and "data" in v:
-                    all_data.extend(v["data"])
-                elif isinstance(v, list):
-                    all_data.extend(v)
+            if "data" in raw_data:
+                raw_data = raw_data["data"]
+            
+            if isinstance(raw_data, dict):
+                for k, v in raw_data.items():
+                    if isinstance(v, dict) and "data" in v:
+                        all_data.extend(v["data"])
+                    elif isinstance(v, list):
+                        all_data.extend(v)
+            elif isinstance(raw_data, list):
+                all_data = raw_data
         elif isinstance(raw_data, list):
             all_data = raw_data
     except Exception as e:
@@ -87,12 +96,15 @@ def handle_tanya_alasan(entities):
     context = build_global_context(all_data)
     nama_target = entities.get("CUSTOMER_NAME")[0] if entities.get("CUSTOMER_NAME") else None
 
-    # BUAT ID BARU UNTUK CHAINING REPLY
+    # 4. BUAT ID BARU UNTUK CHAT PENJELASAN INI
     new_chat_id = str(uuid.uuid4())
+    
+    # Kunci tipe datanya sebagai "explanation" agar tidak merusak antrean fallback nanti
     session_store.CHAT_HISTORY.append({
         "id": new_chat_id,
-        "data": raw_data, 
-        "periode": periode
+        "data": all_data, 
+        "periode": periode,
+        "type": "explanation"
     })
 
     if nama_target:

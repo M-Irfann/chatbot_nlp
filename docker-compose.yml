@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+
+  flask_app:
+    build: .
+    container_name: flask_nlp_app
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      - mysql_db
+
+    environment:
+      DB_HOST: mysql_db
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: python_api
+
+    restart: always
+
+  mysql_db:
+    image: mysql:8.0
+
+    container_name: mysql_python_api
+
+    restart: always
+
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: python_api
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./python_api.sql:/docker-entrypoint-initdb.d/python_api.sql
+
+volumes:
+  mysql_data:

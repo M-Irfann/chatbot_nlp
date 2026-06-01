@@ -1,0 +1,380 @@
+{% extends "pages/main.html" %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+.header_page {
+    height: 100dvh;
+    max-width: 500px;
+    margin: auto;
+    background: #111;
+    font-family: sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 🔵 header biru */
+.header {
+    height: 220px;
+    padding: 25px 20px;
+    color: white;
+    background: linear-gradient(135deg, #5f8dee, #3f6ed6);
+    
+    display: flex;
+    flex-direction: column;
+}
+
+/* bagian uang */
+.money {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.amount {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: -15px;
+}
+
+/* greeting */
+.greeting {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* ⚪ card putih */
+.cards {
+    margin-top :50px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.card-body {
+    position: absolute;
+    top: 140px;
+
+    box-shadow: 0 -10px 15px rgba(0,0,0,0.2);
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: #f5f5f5;
+    border-radius: 25px 25px 0 0;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-group label {
+    font-size: 13px;
+    color: #444;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.card-icon {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 10px;
+    border: 1px solid #879ac4;
+    padding: 1rem;
+    border-radius: 13px;
+    width: 100%;
+    text-align: center;
+}
+
+.icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    color: #333;
+}
+
+.icon-box {
+    width: 50px;
+    height: 50px;
+    background: #f5f5f5;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 5px;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+}
+
+.search-field {
+    margin-top: 25px;
+    width: 100%;
+}
+
+.search-field input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border-radius: 50px;
+    border: 1px solid #879ac4;
+    outline: none;
+}
+
+.icon-item {
+    text-decoration: none;
+    color: inherit;
+}
+
+.icon-box img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.icon-box img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+/* =========================
+   MODAL WARNING
+========================= */
+
+.modal-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0,0,0,0.55);
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    z-index: 9999;
+}
+
+.modal-content-warning {
+    width: 85%;
+    max-width: 340px;
+
+    background: white;
+
+    border-radius: 20px;
+
+    padding: 25px 20px;
+
+    text-align: center;
+
+    animation: popup .2s ease;
+}
+
+.warning-icon {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.modal-content-warning h3 {
+    margin: 0;
+    color: #222;
+}
+
+.modal-content-warning p {
+    font-size: 14px;
+    color: #555;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+.warning-box {
+    background: #fff4d8;
+    color: #946200;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+
+    margin-top: 15px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-cancel {
+    flex: 1;
+
+    border: none;
+
+    background: #e5e5e5;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+.btn-continue {
+    flex: 1;
+
+    background: #4c6edb;
+
+    color: white;
+
+    text-decoration: none;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    font-weight: bold;
+}
+
+@keyframes popup {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+</style>
+
+<div class="header_page">
+
+    <!-- Header biru -->
+    <div class="header">
+
+         <div class="money">
+            <p class="label">Pendapatan Bulan Ini</p>
+
+            <h2 class="amount">
+                {{ "{:,.0f}".format(total_pendapatan).replace(",", ".") }}
+            </h2>
+        </div>
+
+        <h1 class="greeting">Halo, Suwarsih 👋</h1>
+
+    </div>
+
+   <div class="card-body">
+
+    <!-- ICON MENU -->
+<div class="card-icon">
+
+    <a href="{{ url_for('page_routes.chatbot_page') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/chat.png') }}" alt="chat">
+        </div>
+
+        <span>Chatbot</span>
+    </a>
+
+    <a href="{{ url_for('page_routes.input_pelanggan') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/input.png') }}" class="input-img" alt="user">
+        </div>
+
+        <span>Input Data Baru</span>
+    </a>
+
+    <a href="#" class="icon-item" onclick="showWarningModal()">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/data.png') }}" alt="bobot">
+        </div>
+
+        <span>Bobot</span>
+    </a>
+
+</div>
+
+    <!-- SEARCH -->
+    <div class="search-field">
+        <h6 class="text-center">Cari Pelanggan</h6>
+
+        <input type="text" placeholder="Cari...">
+    </div>
+
+</div>
+
+</div>
+
+<!-- MODAL WARNING -->
+<div id="warningModal" class="modal-warning">
+
+    <div class="modal-content-warning">
+
+        <div class="warning-icon">
+            ⚠️
+        </div>
+
+        <h3>Peringatan Bobot Kriteria</h3>
+
+        <p>
+            Mengubah bobot kriteria akan mempengaruhi hasil ranking pelanggan.
+        </p>
+
+        <div class="warning-box">
+            Pastikan total bobot tetap bernilai <b>1.00</b>
+        </div>
+
+        <div class="modal-buttons">
+
+            <button class="btn-cancel" onclick="closeWarningModal()">
+                Batal
+            </button>
+
+            <a 
+                href="{{ url_for('page_routes.input_kriteria') }}"
+                class="btn-continue"
+            >
+                Lanjutkan
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function showWarningModal() {
+    document.getElementById("warningModal").style.display = "flex";
+}
+
+function closeWarningModal() {
+    document.getElementById("warningModal").style.display = "none";
+}
+
+</script>
+
+{% endblock %}

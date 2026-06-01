@@ -1,0 +1,533 @@
+{% extends "pages/main.html" %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+.header_page {
+    height: 100dvh;
+    max-width: 500px;
+    margin: auto;
+    background: #111;
+    font-family: sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 🔵 header biru */
+.header {
+    height: 220px;
+    padding: 25px 20px;
+    color: white;
+    background: linear-gradient(135deg, #5f8dee, #3f6ed6);
+    
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* bagian uang */
+.money {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.amount {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: -15px;
+}
+
+/* greeting */
+.greeting {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* ⚪ card putih */
+.cards {
+    margin-top :50px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.card-body {
+    position: absolute;
+    top: 140px;
+
+    box-shadow: 0 -10px 15px rgba(0,0,0,0.2);
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: #f5f5f5;
+    border-radius: 25px 25px 0 0;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-group label {
+    font-size: 13px;
+    color: #444;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.card-icon {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-top: 10px;
+    border: 1px solid #879ac4;
+    padding: 1rem;
+    border-radius: 13px;
+    width: 100%;
+    text-align: center;
+}
+
+.icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    color: #333;
+}
+
+.icon-box {
+    width: 50px;
+    height: 50px;
+    background: #f5f5f5;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 5px;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+}
+
+.search-field {
+    margin-top: 25px;
+    width: 100%;
+}
+
+.search-field input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 50px;
+    border: 1px solid #879ac4;
+    outline: none;
+}
+
+.icon-item {
+    text-decoration: none;
+    color: inherit;
+}
+
+.icon-box img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+/* =========================
+   LOGOUT BUTTON
+========================= */
+
+.logout-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+
+    width: 42px;
+    height: 42px;
+
+    background: rgba(255,255,255,0.2);
+
+    border-radius: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-decoration: none;
+
+    backdrop-filter: blur(5px);
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.logout-btn img {
+    width: 22px;
+    height: 22px;
+}
+
+/* =========================
+   MODAL LOGOUT
+========================= */
+
+.logout-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0,0,0,0.55);
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    z-index: 9999;
+}
+
+.logout-modal-content {
+    width: 85%;
+    max-width: 330px;
+
+    background: white;
+
+    border-radius: 20px;
+
+    padding: 25px 20px;
+
+    text-align: center;
+
+    animation: popup .2s ease;
+}
+
+.logout-icon {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.logout-modal-content h3 {
+    margin: 0;
+    color: #222;
+}
+
+.logout-modal-content p {
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+.logout-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-batal {
+    flex: 1;
+
+    border: none;
+
+    background: #e5e5e5;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+.btn-logout {
+    flex: 1;
+
+    background: #e14b4b;
+
+    color: white;
+
+    text-decoration: none;
+
+    padding: 12px;
+
+    border-radius: 12px;
+
+    font-weight: bold;
+}
+
+.logout-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 10px auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-icon img {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+}
+@keyframes popup {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+#hasilPencarian{
+    margin-top: 10px;
+
+    max-height: 350px;
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    padding-right: 3px;
+}
+
+/* scrollbar */
+#hasilPencarian::-webkit-scrollbar{
+    width: 5px;
+}
+
+#hasilPencarian::-webkit-scrollbar-thumb{
+    background: #b8c4e4;
+    border-radius: 10px;
+}
+
+.hasil-item{
+    background: white;
+
+    padding: 10px 12px;
+
+    border-radius: 12px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.hasil-item span{
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.hasil-item a{
+    width: 35px;
+    height: 35px;
+
+
+    border-radius:10px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.hasil-item a img{
+    width:21px;
+    height:21px;
+    object-fit:contain;
+}
+</style>
+
+<div class="header_page">
+
+    <!-- Header biru -->
+    <div class="header">
+
+        <!-- BUTTON LOGOUT -->
+        <a href="#" class="logout-btn" onclick="showLogoutModal()">
+            <img src="{{ url_for('static', filename='images/logout_1.png') }}" alt="logout">
+        </a>
+
+         <div class="money">
+            <p class="label">Pendapatan Bulan Ini</p>
+
+            <h2 class="amount">
+                Rp. {{ "{:,.0f}".format(total_pendapatan).replace(",", ".") }}
+            </h2>
+        </div>
+
+        <h1 class="greeting">Halo, Suwarsih</h1>
+
+    </div>
+
+   <div class="card-body">
+
+    <!-- ICON MENU -->
+<div class="card-icon">
+
+    <a href="{{ url_for('page_routes.chatbot_page') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/chat.png') }}" alt="chat">
+        </div>
+
+        <span>Chatbot</span>
+    </a>
+
+    <a href="{{ url_for('page_routes.input_pelanggan') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/input.png') }}" class="input-img" alt="user">
+        </div>
+
+        <span>Input Data Baru</span>
+    </a>
+
+    <a href="{{ url_for('page_routes.input_kriteria') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/scales.png') }}" alt="bobot">
+        </div>
+
+        <span>Bobot</span>
+    </a>
+
+    <a href="{{ url_for('page_routes.data_pelanggan') }}" class="icon-item">
+        <div class="icon-box">
+            <img src="{{ url_for('static', filename='images/data.png') }}" alt="bobot">
+        </div>
+
+        <span>Data Pelanggan</span>
+    </a>
+
+</div>
+
+    <!-- SEARCH -->
+    <div class="search-field">
+        <h6 class="text-center">Cari Pelanggan</h6>
+
+        <input type="text" id="searchInput" placeholder="Cari...">
+        <div id="hasilPencarian"></div>
+    </div>
+
+</div>
+
+</div>
+
+<!-- MODAL LOGOUT -->
+<div id="logoutModal" class="logout-modal">
+
+    <div class="logout-modal-content">
+
+        <div class="logout-icon">
+            <img src="{{ url_for('static', filename='images/logout.png') }}" alt="logout">
+        </div>
+
+        <h3>Mau Keluar?</h3>
+
+        <p>
+            Anda akan keluar dari dashboard FAPAKI Laundry.
+        </p>
+
+        <div class="logout-buttons">
+
+            <button class="btn-batal" onclick="closeLogoutModal()">
+                Batal
+            </button>
+
+            <a 
+                href="{{ url_for('page_routes.logout') }}"
+                class="btn-logout"
+            >
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function showLogoutModal() {
+    document.getElementById("logoutModal").style.display = "flex";
+}
+
+function closeLogoutModal() {
+    document.getElementById("logoutModal").style.display = "none";
+}
+
+const searchInput = document.getElementById("searchInput")
+
+searchInput.addEventListener("keyup", async function(){
+
+    let keyword = this.value
+
+    if(keyword.trim() === ""){
+
+        document.getElementById(
+            "hasilPencarian"
+        ).innerHTML = ""
+
+        return
+    }
+
+    const response = await fetch(
+        `/search_pelanggan?keyword=${keyword}`
+    )
+
+    const data = await response.json()
+
+    let html = ""
+
+    if(data.length === 0){
+
+        html = `
+            <div class="hasil-item">
+                <span>Pelanggan tidak ditemukan</span>
+            </div>
+        `
+    }
+
+    data.forEach(item => {
+
+        html += `
+            <div class="hasil-item">
+
+                <span>${item.nama}</span>
+
+                <a href="/input_data_pelanggan?nama=${item.nama}">
+                     <img src="{{ url_for('static', filename='images/click.png') }}" alt="Enter">
+                </a>
+
+            </div>
+        `
+    })
+
+    document.getElementById(
+        "hasilPencarian"
+    ).innerHTML = html
+
+})
+
+</script>
+
+{% endblock %}

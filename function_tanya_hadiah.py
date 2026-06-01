@@ -24,35 +24,35 @@ def build_global_context(data):
 # =========================
 def build_reward(row, rank, context):
     if not context:
-        return "hadiah tidak tersedia"
-    
+        return "reward tidak tersedia"
+
     wp = row.get("nilai_wp", 0)
     freq = row.get("frekuensi", 0)
     nominal = row.get("total_nominal", 0)
+
     avg_wp = context.get("avg_wp", 0)
+    avg_freq = context.get("avg_freq", 0)
+    avg_nominal = context.get("avg_nominal", 0)
 
-    # 1. CEK DULU APAKAH DIA LAYAK DAPAT HADIAH UTAMA (Berdasarkan Nilai WP)
-    # Pelanggan "Biasa" biasanya WP-nya rendah (misal di bawah 0.3)
-    if wp < 0.3:
-        if wp > 0.1:
-            return "voucher diskon 5% untuk transaksi berikutnya"
-        return "terima kasih telah berlangganan"
+    if wp < 0.15:
+        return "gratis setrika 1kg"
 
-    # 2. JIKA WP LAYAK (DI ATAS 0.3), BARU CEK RANKING
     if rank == 1:
-        return "GRAND PRIZE: cuci lipat gratis 10kg + prioritas layanan"
-    if rank == 2:
-        return "cuci kering gratis 7kg + bonus prioritas"
-    if rank == 3:
-        return "cuci kering gratis 7kg"
+        return "gratis cuci lipat 1x"
 
-    # 3. LOGIK DINAMIS UNTUK SISANYA
-    if wp >= avg_wp * 1.1:
-        return "cuci basah gratis 7kg"
-    if freq > context.get("avg_freq", 0) and nominal > context.get("avg_nominal", 0):
-        return "cuci basah gratis 5kg"
-    
-    return "diskon 10%"
+    if rank == 2:
+        return "gratis cuci kering 7kg"
+
+    if rank == 3:
+        return "gratis cuci basah 7kg"
+
+    if freq >= avg_freq and nominal >= avg_nominal and wp >= avg_wp:
+        return "gratis cuci basah 7kg"
+
+    if wp >= avg_wp * 0.7:
+        return "gratis setrika 1kg"
+
+    return "gratis cuci basah 1x"
 
 # =========================
 # TERMS
@@ -60,34 +60,47 @@ def build_reward(row, rank, context):
 def build_terms(row, context):
     if not context:
         return "syarat tidak tersedia"
+
     terms = []
     if row.get("frekuensi", 0) < context.get("avg_freq", 0):
-        terms.append("tingkatkan frekuensi transaksi")
+        terms.append("meningkatkan frekuensi transaksi")
+
     if row.get("total_nominal", 0) < context.get("avg_nominal", 0):
-        terms.append("tingkatkan total belanja")
+        terms.append("meningkatkan total nominal transaksi")
+
     if not terms:
-        return "langsung bisa diklaim"
-    return ", ".join(terms)
+        return "reward dapat langsung diklaim"
+
+    return "perlu " + " dan ".join(terms)
 
 # =========================
-# MAIN HANDLER
+# MAIN HANDLER (FIXED LOGIC)
 # =========================
 def handle_tanya_hadiah(entities):
     reply_id = entities.get("REPLY_ID")
     store = None
 
+    # 1. Bersihkan format string ID-nya agar sinkron dengan database memori
+    if reply_id:
+        reply_id = str(reply_id).strip().lower()
+
+    # 2. PROSES CARI BERDASARKAN REPLY ID
     if reply_id:
         for item in reversed(session_store.CHAT_HISTORY):
-            if str(item.get("id")) == str(reply_id):
+            item_id = str(item.get("id", "")).strip().lower()
+            if item_id == reply_id:
                 store = item
                 break
 
+    # 3. FALLBACK AMAN: Lewati chat penjelasan, ambil data master ranking terakhir
     if not store and session_store.CHAT_HISTORY:
-        store = session_store.CHAT_HISTORY[-1]
+        for item in reversed(session_store.CHAT_HISTORY):
+            if item.get("type") != "explanation":
+                store = item
+                break
 
     if not store:
         return {"message": "Belum ada data ranking di memori."}
-
 
     raw_data = store.get("data", {})
     periode = store.get("periode", {"awal": "N/A", "akhir": "N/A"})
@@ -105,11 +118,22 @@ def handle_tanya_hadiah(entities):
     except:
         return {"message": "Struktur data rusak"}
 
+    if not all_data:
+        return {"message": "Data ranking kosong atau format salah."}
+
     context = build_global_context(all_data)
     nama_target = entities.get("CUSTOMER_NAME")[0] if entities.get("CUSTOMER_NAME") else None
     
+    # 4. BUAT ID BARU UNTUK CHAT HADIAH INI
     new_chat_id = str(uuid.uuid4())
-    session_store.CHAT_HISTORY.append({"id": new_chat_id, "data": raw_data, "periode": periode})
+    
+    # Kunci sebagai "explanation" agar tidak merusak antrean fallback berikutnya
+    session_store.CHAT_HISTORY.append({
+        "id": new_chat_id, 
+        "data": all_data, 
+        "periode": periode,
+        "type": "explanation"
+    })
 
     if nama_target:
         for i, row in enumerate(all_data):
