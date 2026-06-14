@@ -1,164 +1,181 @@
-import session_store
-import uuid
+from connection import connection_db
 
 # =========================
-# GLOBAL CONTEXT
+# RULE LAUNDRY
 # =========================
-def build_global_context(data):
-    if not data:
-        return None
-    try:
-        avg_freq = sum(r.get("frekuensi", 0) for r in data) / len(data)
-        avg_nominal = sum(r.get("total_nominal", 0) for r in data) / len(data)
-        avg_wp = sum(r.get("nilai_wp", 0) for r in data) / len(data)
-        return {
-            "avg_freq": avg_freq,
-            "avg_nominal": avg_nominal,
-            "avg_wp": avg_wp
-        }
-    except:
-        return None
+LAUNDRY_RULES = {
+    "basah": {
+        "min_freq": 5,
+        "label": "Cuci Basah",
+        "price_per_kg": 10000
+    },
+    "kering": {
+        "min_freq": 8,
+        "label": "Cuci Kering",
+        "price": 18000
+    },
+    "lipat": {
+        "min_freq": 10,
+        "label": "Cuci Lipat",
+        "price": 23000
+    }
+}
 
 # =========================
-# REWARD ENGINE
+# REASON ENGINE (KITA KOSONGKAN AGAR TIDAK MENGULANG ANGKA)
 # =========================
-def build_reward(row, rank, context):
-    if not context:
-        return "reward tidak tersedia"
+def build_reason(row):
+    # Di menu hadiah, owner tidak butuh rumus matematika lagi. 
+    # Cukup kembalikan string kosong agar tampilan chat bersih.
+    return ""
 
-    wp = row.get("nilai_wp", 0)
+
+# =========================
+# DETEKSI LEVEL SERVICE
+# =========================
+def get_service_level(row):
     freq = row.get("frekuensi", 0)
-    nominal = row.get("total_nominal", 0)
 
-    avg_wp = context.get("avg_wp", 0)
-    avg_freq = context.get("avg_freq", 0)
-    avg_nominal = context.get("avg_nominal", 0)
+    if freq >= 10:
+        return LAUNDRY_RULES["lipat"]
+    elif freq >= 8:
+        return LAUNDRY_RULES["kering"]
+    elif freq >= 5:
+        return LAUNDRY_RULES["basah"]
+    else:
+        return None
 
-    if wp < 0.15:
-        return "gratis setrika 1kg"
-
-    if rank == 1:
-        return "gratis cuci lipat 1x"
-
-    if rank == 2:
-        return "gratis cuci kering 7kg"
-
-    if rank == 3:
-        return "gratis cuci basah 7kg"
-
-    if freq >= avg_freq and nominal >= avg_nominal and wp >= avg_wp:
-        return "gratis cuci basah 7kg"
-
-    if wp >= avg_wp * 0.7:
-        return "gratis setrika 1kg"
-
-    return "gratis cuci basah 1x"
 
 # =========================
-# TERMS
+# REWARD LOGIC 
 # =========================
-def build_terms(row, context):
-    if not context:
-        return "syarat tidak tersedia"
+def get_reward(rank, row):
+    service = get_service_level(row)
 
-    terms = []
-    if row.get("frekuensi", 0) < context.get("avg_freq", 0):
-        terms.append("meningkatkan frekuensi transaksi")
+    if not service:
+        return "TIDAK_DAPAT_HADIAH"
 
-    if row.get("total_nominal", 0) < context.get("avg_nominal", 0):
-        terms.append("meningkatkan total nominal transaksi")
+    return f"Gratis {service['label']}"
 
-    if not terms:
-        return "reward dapat langsung diklaim"
-
-    return "perlu " + " dan ".join(terms)
 
 # =========================
-# MAIN HANDLER (FIXED LOGIC)
+# REKOMENDASI TINDAKAN UNTUK OWNER (DIUBAH KE BAHASA SEDERHANA)
+# =========================
+def get_recommendation(row):
+    freq = row.get("frekuensi", 0)
+
+    # 1. Pelanggan Utama (Dapat hadiah tertinggi)
+    if freq >= 10:
+        return "Pelanggan ini sering banget. menurut saya sih berikan hadiahnya saat mereka datang biar makin betah langganan."
+    
+    # 2. Pelanggan Aktif Kering / Basah (Dapat hadiah menengah)
+    elif freq >= 5 and freq < 10:
+        return "Berikan ini kalau kamu mau dan ingatkan tipis-tipis kalau sering laundry di sini hadiahnya bisa naik level."
+    
+    # 3. Pelanggan Biasa (Belum memenuhi syarat reward)
+    else:
+        return "Pelanggan ini masih jarang laundry. Dorong supaya pelanggan ini tetap cuci di sini"
+
+
+# =========================
+# AMBIL SESSION
+# =========================
+def get_last_ranking_session(nama_target=None):
+    conn = connection_db()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        if nama_target:
+            cursor.execute("""
+                SELECT s.* FROM chat_sessions s
+                JOIN chat_session_data d ON s.id = d.chat_id
+                WHERE s.type = 'ranking' AND LOWER(d.nama) = LOWER(%s)
+                ORDER BY s.created_at DESC
+                LIMIT 1
+            """, (nama_target,))
+        else:
+            cursor.execute("""
+                SELECT * FROM chat_sessions
+                WHERE type = 'ranking'
+                ORDER BY created_at DESC
+                LIMIT 1
+            """)
+            
+        session = cursor.fetchone()
+
+        if not session:
+            return None, []
+
+        cursor.execute("""
+            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal, jumlah_transaksi
+            FROM chat_session_data
+            WHERE chat_id = %s
+            ORDER BY peringkat ASC
+        """, (session["id"],))
+
+        data = cursor.fetchall()
+        return session, data
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# =========================
+# MAIN HANDLER
 # =========================
 def handle_tanya_hadiah(entities):
-    reply_id = entities.get("REPLY_ID")
-    store = None
+    nama_target = None
+    if entities.get("CUSTOMER_NAME"):
+        nama_target = entities["CUSTOMER_NAME"][0]
 
-    # 1. Bersihkan format string ID-nya agar sinkron dengan database memori
-    if reply_id:
-        reply_id = str(reply_id).strip().lower()
+    session, all_data = get_last_ranking_session(nama_target)
 
-    # 2. PROSES CARI BERDASARKAN REPLY ID
-    if reply_id:
-        for item in reversed(session_store.CHAT_HISTORY):
-            item_id = str(item.get("id", "")).strip().lower()
-            if item_id == reply_id:
-                store = item
-                break
+    if not session or not all_data:
+        return {"message": "Belum ada data ranking."}
 
-    # 3. FALLBACK AMAN: Lewati chat penjelasan, ambil data master ranking terakhir
-    if not store and session_store.CHAT_HISTORY:
-        for item in reversed(session_store.CHAT_HISTORY):
-            if item.get("type") != "explanation":
-                store = item
-                break
+    periode = {
+        "awal": str(session["periode_awal"]),
+        "akhir": str(session["periode_akhir"])
+    }
 
-    if not store:
-        return {"message": "Belum ada data ranking di memori."}
-
-    raw_data = store.get("data", {})
-    periode = store.get("periode", {"awal": "N/A", "akhir": "N/A"})
-    all_data = []
-
-    try:
-        if isinstance(raw_data, list):
-            all_data = raw_data
-        elif isinstance(raw_data, dict):
-            for k, v in raw_data.items():
-                if isinstance(v, dict) and "data" in v:
-                    all_data.extend(v["data"])
-                elif isinstance(v, list):
-                    all_data.extend(v)
-    except:
-        return {"message": "Struktur data rusak"}
-
-    if not all_data:
-        return {"message": "Data ranking kosong atau format salah."}
-
-    context = build_global_context(all_data)
-    nama_target = entities.get("CUSTOMER_NAME")[0] if entities.get("CUSTOMER_NAME") else None
-    
-    # 4. BUAT ID BARU UNTUK CHAT HADIAH INI
-    new_chat_id = str(uuid.uuid4())
-    
-    # Kunci sebagai "explanation" agar tidak merusak antrean fallback berikutnya
-    session_store.CHAT_HISTORY.append({
-        "id": new_chat_id, 
-        "data": all_data, 
-        "periode": periode,
-        "type": "explanation"
-    })
-
+    # =========================
+    # SINGLE CUSTOMER
+    # =========================
     if nama_target:
         for i, row in enumerate(all_data):
-            if row.get("nama", "").lower() == nama_target.lower():
-                return {
-                    "nama": row.get("nama"),
-                    "rank": i + 1,
-                    "hadiah": build_reward(row, i + 1, context),
-                    "syarat": build_terms(row, context),
-                    "periode": periode,
-                    "chat_id": new_chat_id
-                }
-        return {"message": f"Nama {nama_target} tidak ada.", "chat_id": new_chat_id}
+            if row["nama"].lower() == nama_target.lower():
+                rank = i + 1
 
+                return {
+                    "nama": row["nama"],
+                    "peringkat": rank,
+                    "hadiah": get_reward(rank, row),
+                    "rekomendasi": get_recommendation(row),
+                    "alasan": build_reason(row),
+                    "periode": periode,
+                    "chat_id": session["id"]
+                }
+
+        return {"message": f"{nama_target} tidak ditemukan dalam ranking."}
+
+    # =========================
+    # ALL CUSTOMER
+    # =========================
     result = []
     for i, row in enumerate(all_data):
+        rank = i + 1
         result.append({
-            "nama": row.get("nama"),
-            "rank": i + 1,
-            "hadiah": build_reward(row, i + 1, context),
-            "syarat": build_terms(row, context)
+            "nama": row["nama"],
+            "peringkat": rank,
+            "hadiah": get_reward(rank, row),
+            "rekomendasi": get_recommendation(row),
+            "alasan": build_reason(row)
         })
 
     return {
-        "summary": f"Rekomendasi hadiah periode {periode.get('awal')} s/d {periode.get('akhir')}",
+        "summary": f"Pemberian reward periode {periode['awal']} s/d {periode['akhir']}",
         "data": result,
-        "chat_id": new_chat_id
+        "chat_id": session["id"]
     }
+

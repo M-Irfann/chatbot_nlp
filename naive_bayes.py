@@ -267,6 +267,16 @@ def classify_intents(text):
 #     print("ACCURACY :", round(accuracy, 2), "%")
 
 
+
+
+
+
+
+
+
+
+
+
 # ===========================
 # TEST SINGLE EXAMPLE
 # ===========================
