@@ -167,63 +167,93 @@ def handle_metric_query(entities):
 
 # =========================
 # WEIGHTED PRODUCT
-# =========================
+
 def weigted_product_proses(tanggal_awal, tanggal_akhir, limit, status, chat_id):
 
     conn = connection_db()
     cursor = conn.cursor(dictionary=True)
 
     try:
+        # 1. Kunci tingkatan level berdasarkan nama layanan (Urutan Harga)
+        mapping_level = {
+            "setrika": 1,
+            "cuci setrika": 2,
+            "cuci basah": 3,
+            "cuci kering": 4,
+            "cuci lipat": 5,
+            "bed cover": 6,
+            "selimut": 6  # Antisipasi kalau di database tertulis 'selimut'
+        }
+
+        # 2. Ambil data transaksi dari tabel pelanggan
         cursor.execute("""
             SELECT nama,
                    COUNT(tanggal) as frekuensi,
-                   SUM(berat) as jumlah_transaksi,
                    SUM(nominal) as total_nominal,
-                   COALESCE(AVG(
-                        CASE LOWER(jenis_cuci)
-                            WHEN 'cuci basah' THEN 1
-                            WHEN 'setrika' THEN 2
-                            WHEN 'cuci kering' THEN 3
-                            ELSE 1 END
-                   ),1) as jenis_level
+                   LOWER(jenis_cuci) as nama_layanan
             FROM pelanggan
             WHERE tanggal BETWEEN %s AND %s
-            GROUP BY nama
+            GROUP BY nama, LOWER(jenis_cuci)
         """, (tanggal_awal, tanggal_akhir))
 
-        data = cursor.fetchall()
-        if not data:
+        raw_data = cursor.fetchall()
+        if not raw_data:
             return {"data": []}
 
+        # 3. Satukan data transaksi per pelanggan
+        pelanggan_map = {}
+        for row in raw_data:
+            nama = row["nama"]
+            # Cocokkan nama layanan ke mapping_level, kalau tidak ada default ke 1
+            layanan_clean = row["nama_layanan"].strip() if row["nama_layanan"] else ""
+            level = mapping_level.get(layanan_clean, 1)
+            
+            if nama not in pelanggan_map:
+                pelanggan_map[nama] = {
+                    "nama": nama,
+                    "frekuensi": 0,
+                    "total_nominal": 0.0,
+                    "total_level": 0.0,
+                    "jumlah_layanan": 0
+                }
+            
+            pelanggan_map[nama]["frekuensi"] += row["frekuensi"]
+            pelanggan_map[nama]["total_nominal"] += float(row["total_nominal"])
+            pelanggan_map[nama]["total_level"] += level
+            pelanggan_map[nama]["jumlah_layanan"] += 1
+
+        # 4. Ambil bobot kriteria dari database
         cursor.execute("SELECT * FROM bobot_kriteria WHERE id=1")
         bobot = cursor.fetchone()
 
         w1 = float(bobot["bobot_frekuensi"])
-        w2 = float(bobot["bobot_total_kg"])
         w3 = float(bobot["bobot_jenis_cuci"])
         w4 = float(bobot["bobot_total_nominal"])
 
         hasil = []
 
-        for row in data:
+        # 5. Hitung nilai Weighted Product (WP)
+        for nama, p in pelanggan_map.items():
+            # Hitung rata-rata level jenis cuci si pelanggan
+            avg_jenis_level = p["total_level"] / p["jumlah_layanan"] if p["jumlah_layanan"] else 1.0
+
             score = (
-                (float(row["frekuensi"]) ** w1) *
-                (float(row["jumlah_transaksi"]) ** w2) *
-                (float(row["jenis_level"]) ** w3) *
-                (float(row["total_nominal"]) ** w4)
+                (float(p["frekuensi"]) ** w1) *
+                (float(avg_jenis_level) ** w3) *
+                (float(p["total_nominal"]) ** w4)
             )
 
             hasil.append({
-                "nama": row["nama"],
+                "nama": p["nama"],
                 "nilai_wp": score,
-                "frekuensi": row["frekuensi"],
-                "total_nominal": row["total_nominal"],
-                "jumlah_transaksi": row["jumlah_transaksi"]
+                "frekuensi": p["frekuensi"],
+                "total_nominal": p["total_nominal"],
+                "jumlah_transaksi": 0
             })
 
         hasil.sort(key=lambda x: x["nilai_wp"], reverse=True)
 
-        max_val = max(x["nilai_wp"] for x in hasil)
+        max_val = max(x["nilai_wp"] for x in hasil) if hasil else 0
         for x in hasil:
             x["nilai_wp"] = x["nilai_wp"] / max_val if max_val else 0
 
@@ -266,24 +296,24 @@ def grouping_logic(hasil_wp, limit, status, tanggal_awal, tanggal_akhir, chat_id
 
     try:
         cursor.execute("""
-            INSERT INTO chat_sessions
+            INSERT INTO chat_sessions 
             (id, created_at, updated_at, status, periode_awal, periode_akhir, type)
             VALUES (%s, NOW(), NOW(), %s, %s, %s, %s)
         """, (chat_id, target, tanggal_awal, tanggal_akhir, "ranking"))
 
         for i, row in enumerate(data_final):
+            # UPDATE: Kolom jumlah_transaksi dan %s terakhir sudah dihapus
             cursor.execute("""
-                INSERT INTO chat_session_data
-                (chat_id, nama, peringkat, nilai_wp, frekuensi, total_nominal, jumlah_transaksi)
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO chat_session_data 
+                (chat_id, nama, peringkat, nilai_wp, frekuensi, total_nominal)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """, (
                 chat_id,
                 row["nama"],
                 i + 1,
                 row["nilai_wp"],
                 row["frekuensi"],
-                row["total_nominal"],
-                row["jumlah_transaksi"]
+                row["total_nominal"]
             ))
 
         conn.commit()

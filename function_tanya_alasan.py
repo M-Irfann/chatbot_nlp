@@ -19,19 +19,18 @@ def build_global_context(data):
 
 # =========================
 # REASON ENGINE
-# =========================
+
 def build_reason(row, context):
     if not context:
         return "data tidak tersedia"
 
     frekuensi = row.get("frekuensi", 0)
-    total_kg = row.get("jumlah_transaksi", 0)
     total_nominal = row.get("total_nominal", 0)
     nilai_wp = row.get("nilai_wp", 0)
 
+    # UPDATE: Menghilangkan teks total cucian sekian kg
     return (
         f"karena memiliki frekuensi transaksi sebanyak {frekuensi:.0f} kali, "
-        f"total cucian {total_kg:.1f} kg, "
         f"total nominal Rp {total_nominal:,.0f}, "
         f"dan nilai weighted product {nilai_wp:.3f}"
     )

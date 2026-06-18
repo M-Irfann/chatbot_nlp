@@ -135,110 +135,109 @@ FAPAKI Laundry
 
     <div class="card-body">
 
-        <form
-            class="form"
-            method="POST"
+        <form class="form" method="POST">
+
+    <div class="form-group">
+        <label>Nama</label>
+        <input
+            type="text"
+            name="nama"
+            value="{% if pelanggan %}{{ pelanggan.nama }}{% endif %}"
+            placeholder="Masukkan nama"
+            {% if pelanggan %}readonly{% endif %}
+            required
         >
+    </div>
 
-            <div class="form-group">
+    <div class="form-group">
+        <label>Jenis cuci</label>
+        <select name="jenis_cuci" required>
+            <option value="">-- Pilih Jenis Cuci --</option>
+            {% for item in jenis_cuci %}
+                <option value="{{ item.nama_jenis }}">{{ item.nama_jenis }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>Berat Kg</label>
+        <input
+            type="text"
+            id="beratInput"
+            name="berat"
+            placeholder="Masukan Seperti ini 1.3 / 2.1"
+            required
+        >
+    </div>
 
-                <label>Nama</label>
+    <div class="form-group">
+        <label>Harga</label>
+        <input
+            type="text"
+            id="hargaDisplay"
+            placeholder="Harga"
+            required
+        >
+        <input
+            type="hidden"
+            name="nominal"
+            id="hargaAsli"
+            value="0"
+        >
+    </div>
 
-                <input
-                    type="text"
-                    name="nama"
-                    value="{% if pelanggan %}{{ pelanggan.nama }}{% endif %}"
-                    placeholder="Masukkan nama"
-                    {% if pelanggan %}readonly{% endif %}
-                >
-            </div>
+    <div class="form-group">
+        <label>No Telepon <b>(Opsional)</b></label>
+        <input
+            type="text"
+            name="no_telepon"
+            value="{% if pelanggan and pelanggan.no_telepon %}{{ pelanggan.no_telepon }}{% endif %}"
+            placeholder="No Telepon"
+        >
+    </div>
 
-            <div class="form-group">
-                <label>Jenis cuci</label>
-               
-                <select name="jenis_cuci">
-                    <option value="">
-                        -- Pilih Jenis Cuci --
-                    </option>
-                    {% for item in jenis_cuci %}
-                        <option value="{{ item.nama_jenis }}">
-                            {{ item.nama_jenis }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Berat Kg</label>
-                <input
-                    type="number"
-                    name="berat"
-                    step="0.1"
-                    placeholder="Masukan Seperti ini 1.3 / 2.1"
-                >
-            </div>
-           <div class="form-group">
+    <div class="form-group">
+        <label>Tanggal</label>
+        <input
+            type="date"
+            name="tanggal"
+            value="{{ today }}"
+            required
+        >
+    </div>
 
-                <label>Harga</label>
-                <!-- tampilan -->
-                <input
-                    type="text"
-                    id="hargaDisplay"
-                    placeholder="Harga"
-                >
-                <!-- yang dikirim -->
-                <input
-                    type="hidden"
-                    name="nominal"
-                    id="hargaAsli"
-                >
-            </div>
-            <div class="form-group">
-                <label>No Telepon <b>(Opsional)</b></label>
-                <input
-                    type="text"
-                    name="no_telepon"
-                    value="{% if pelanggan and pelanggan.no_telepon %}{{ pelanggan.no_telepon }}{% endif %}"
-
-                    placeholder="No Telepon"
-                >
-            </div>
-
-            <div class="form-group">
-                <label>Tanggal</label>
-                <input
-                    type="date"
-                    name="tanggal"
-                    value="{{ today }}"
-                >
-            </div>
-
-            <button class="btn-submit">
-                Simpan
-            </button>
-
-        </form>
-
+    <button class="btn-submit">Simpan</button>
+</form>
     </div>
 
 </div>
-<script>
 
+<script>
 const hargaDisplay = document.getElementById("hargaDisplay")
 const hargaAsli = document.getElementById("hargaAsli")
+const beratInput = document.getElementById("beratInput")
 
+// 1. Logika Format Harga Rupiah dengan proteksi nilai kosong
 hargaDisplay.addEventListener("input", function(){
-
     let angka = this.value.replace(/[^0-9]/g, '')
+    
+    // PENCEGAHAN: Jika kosong, ubah jadi "0" agar tidak error di database
+    hargaAsli.value = angka ? angka : "0";
 
-    hargaAsli.value = angka
-
-    this.value = new Intl.NumberFormat(
-        'id-ID'
-    ).format(angka)
-
+    this.value = angka ? new Intl.NumberFormat('id-ID').format(angka) : "";
 })
 
+// 2. Logika Otomatis Mengubah Koma ke Titik pada Berat
+beratInput.addEventListener("input", function(){
+    let value = this.value.replace(/,/g, '.');
+    value = value.replace(/[^0-9.]/g, '');
+    
+    let poinSaja = value.split('.');
+    if (poinSaja.length > 2) {
+        value = poinSaja[0] + '.' + poinSaja.slice(1).join('');
+    }
+    this.value = value;
+})
 </script>
 
 {% endblock %}

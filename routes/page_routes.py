@@ -33,8 +33,28 @@ def input_pelanggan():
 
         nama = request.form.get("nama")
         jenis_cuci = request.form.get("jenis_cuci")
-        berat = request.form.get("berat")
-        nominal = request.form.get("nominal")
+        
+        # 1. Ambil data mentah dari form HTML
+        berat_raw = request.form.get("berat")
+        nominal_raw = request.form.get("nominal")
+
+        # 2. PENCEGAHAN BERAT: Jika kosong atau salah ketik, paksa jadi 0.0
+        if not berat_raw or berat_raw.strip() == "":
+            berat = 0.0
+        else:
+            try:
+                berat = float(berat_raw)
+            except ValueError:
+                berat = 0.0
+
+        # 3. PENCEGAHAN NOMINAL: Jika kosong atau salah ketik, paksa jadi angka 0
+        if not nominal_raw or nominal_raw.strip() == "":
+            nominal = 0
+        else:
+            try:
+                nominal = int(nominal_raw)
+            except ValueError:
+                nominal = 0
 
         no_telepon = (
             request.form.get("no_telepon") or None
@@ -43,7 +63,6 @@ def input_pelanggan():
         tanggal = request.form.get("tanggal")
 
         conn = connection_db()
-
         cursor = conn.cursor()
 
         query = """
@@ -59,6 +78,7 @@ def input_pelanggan():
             VALUES (%s, %s, %s, %s, %s, %s)
         """
 
+        # Gunakan variabel nominal dan berat yang sudah aman di atas
         values = (
             nama,
             nominal,
@@ -69,7 +89,6 @@ def input_pelanggan():
         )
 
         cursor.execute(query, values)
-
         conn.commit()
 
         cursor.close()
@@ -77,43 +96,35 @@ def input_pelanggan():
 
         return redirect("/dashboard")
 
+    # ====================================================
+    # PROSES GET (Membuka Halaman Form)
+    # ====================================================
     nama = request.args.get("nama")
-
     pelanggan = None
 
     if nama:
-
         conn = connection_db()
-
         cursor = conn.cursor(dictionary=True)
-
         query = """
             SELECT *
             FROM pelanggan
             WHERE nama = %s
             LIMIT 1
         """
-
         cursor.execute(query, (nama,))
-
         pelanggan = cursor.fetchone()
-
         cursor.close()
         conn.close()
 
     conn = connection_db()
-
     cursor = conn.cursor(dictionary=True)
 
     query_jenis = """
         SELECT *
         FROM jenis_cuci
     """
-
     cursor.execute(query_jenis)
-
     jenis_cuci = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
