@@ -67,7 +67,7 @@ def get_last_chat_session(nama_target=None):
         chat_id = session["id"]
 
         cursor.execute("""
-            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal, jumlah_transaksi
+            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal
             FROM chat_session_data
             WHERE chat_id = %s
             ORDER BY peringkat ASC

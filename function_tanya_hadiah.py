@@ -107,7 +107,7 @@ def get_last_ranking_session(nama_target=None):
             return None, []
 
         cursor.execute("""
-            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal, jumlah_transaksi
+            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal
             FROM chat_session_data
             WHERE chat_id = %s
             ORDER BY peringkat ASC
