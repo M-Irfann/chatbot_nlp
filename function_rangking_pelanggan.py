@@ -3,18 +3,7 @@ from connection import connection_db
 import uuid
 import calendar
 from flask import session, has_request_context
-
-def convert_number(value):
-    angka_kata = {
-        "satu": 1, "dua": 2, "tiga": 3, "empat": 4, "lima": 5,
-        "enam": 6, "tujuh": 7, "delapan": 8, "sembilan": 9, "sepuluh": 10
-    }
-    if value is None:
-        return None
-    if str(value).isdigit():
-        return int(value)
-    return angka_kata.get(str(value).lower(), 10)
-
+from user_helper import get_current_user_id
 
 def handle_tentukan_pelanggan_terbaik(entities):
 
@@ -56,9 +45,8 @@ def handle_tentukan_pelanggan_terbaik(entities):
             tanggal_akhir = datetime(tahun_target, bulan_akhir, hari_terakhir, 23, 59, 59)
 
     # [2] PERBAIKAN LOGIKA: N-BULAN ATAU N-MINGGU (TIME_VALUE)
-    # Diperbaiki agar menghitung mundur dari bulan saat ini secara akurat (April - Juni 2026)
     elif entities.get("TIME_VALUE"):
-        val = convert_number(entities["TIME_VALUE"][0])
+        val = entities["TIME_VALUE"]  # Langsung mengambil value int tanpa convert_number lagi
         unit = entities.get("TIME_UNIT", ["bulan"])[0]
         
         tanggal_akhir = hari_ini.replace(hour=23, minute=59, second=59, microsecond=0)
@@ -66,8 +54,6 @@ def handle_tentukan_pelanggan_terbaik(entities):
         if unit == "minggu":
             tanggal_awal = tanggal_akhir - timedelta(days=(val * 7))
         elif unit == "bulan":
-            # Menghitung awal rentang dari N bulan yang lalu secara presisi kalender
-            # Misal: Jika sekarang Juni, 3 bulan terakhir = April, Mei, Juni. Maka bulan_awal dimulai dari April (1)
             bulan_akhir_angka = tanggal_akhir.month
             tahun_awal = tanggal_akhir.year
             
@@ -109,7 +95,7 @@ def handle_tentukan_pelanggan_terbaik(entities):
     # --- Sisa logika di bawah ini tetap dipertahankan ---
     status_list = entities.get("STATUS", ["terbaik"])
     intensity_list = entities.get("INTENSITY", [])
-    limit = convert_number(entities.get("RESULT_COUNT", [10])[0])
+    limit = entities.get("RESULT_COUNT", 10)  # Langsung mengambil value int tanpa convert_number lagi
 
     jumlah_status = len(status_list)
     limit_map = {}
@@ -161,7 +147,7 @@ def handle_metric_query(entities):
 
     metric = entities["METRIC"][0]
     comparison = entities["COMPARISON"][0]
-    limit = convert_number(entities.get("RESULT_COUNT", [10])[0])
+    limit = entities.get("RESULT_COUNT", 10) # Langsung integer
 
     if metric == "transaksi":
         order_by = "COUNT(tanggal)"
@@ -365,76 +351,6 @@ def evaluate_weighted_product(tanggal_awal, tanggal_akhir):
         conn.close()
 
 
-# def grouping_logic(hasil_wp, limit, status, tanggal_awal, tanggal_akhir, chat_id):
-#     status_clean = str(status).strip().lower()
-
-#     biasa_keywords = ["biasa", "jarang", "sedikit", "pasif", "kurang", "sepi", 
-#                       "males", "turun", "rendah", "kecil", "bawah", "terbawah"]
-    
-#     terbaik_keywords = ["terbaik", "rajin", "sering", "aktif", "loyal", "setia", 
-#                         "top", "teratas", "prioritas", "banyak", "besar", "gede", "gacor"]
-
-#     if any(x in status_clean for x in biasa_keywords):
-#         target = "biasa"
-#     elif any(x in status_clean for x in terbaik_keywords):
-#         target = "terbaik"
-#     else:
-#         target = "terbaik"
-
-#     print("STATUS =", status)
-#     print("TARGET =", target)
-
-#     if target == "terbaik":
-#         data_final = sorted(hasil_wp, key=lambda x: x["nilai_wp"], reverse=True)[:limit]
-#     else:
-#         data_final = sorted(hasil_wp, key=lambda x: x["nilai_wp"])[:limit]
-
-#     conn = connection_db()
-#     cursor = conn.cursor()
-
-#     user_id = session.get("user_id")
-
-#     if not user_id:
-#         raise Exception("User belum login")
-
-#     try:
-#         cursor.execute("""
-#             INSERT INTO chat_sessions
-#             (id, user_id, created_at, updated_at, status, periode_awal, periode_akhir, type)
-#             VALUES (%s, %s, NOW(), NOW(), %s, %s, %s, %s)
-#         """, (
-#             chat_id,
-#             user_id,
-#             target,
-#             tanggal_awal,
-#             tanggal_akhir,
-#             "ranking"
-#         ))
-
-#         for i, row in enumerate(data_final):
-#             cursor.execute("""
-#                 INSERT INTO chat_session_data
-#                 (chat_id, nama, peringkat, nilai_wp, frekuensi, total_nominal)
-#                 VALUES (%s, %s, %s, %s, %s, %s)
-#             """, (
-#                 chat_id,
-#                 row["nama"],
-#                 i + 1,
-#                 row["nilai_wp"],
-#                 row["frekuensi"],
-#                 row["total_nominal"]
-#             ))
-
-#         conn.commit()
-
-#     finally:
-#         cursor.close()
-#         conn.close()
-
-#     return {
-#         "data": data_final,
-#         "chat_id": chat_id
-#     }
 def grouping_logic(hasil_wp, limit, status, tanggal_awal, tanggal_akhir, chat_id):
     status_clean = str(status).strip().lower()
 
@@ -475,20 +391,9 @@ def grouping_logic(hasil_wp, limit, status, tanggal_awal, tanggal_akhir, chat_id
     conn = connection_db()
     cursor = conn.cursor()
 
-    # ===============================
-    # Ambil user_id
-    # ===============================
-    if has_request_context():
-        user_id = session.get("user_id")
-
-        if not user_id:
-            raise Exception("User belum login")
-    else:
-        # Untuk testing melalui python naive_bayes.py
-        user_id = 1
+    user_id = get_current_user_id()
 
     try:
-
         cursor.execute("""
             INSERT INTO chat_sessions
             (id, user_id, created_at, updated_at, status,
@@ -504,7 +409,6 @@ def grouping_logic(hasil_wp, limit, status, tanggal_awal, tanggal_akhir, chat_id
         ))
 
         for i, row in enumerate(data_final):
-
             cursor.execute("""
                 INSERT INTO chat_session_data
                 (chat_id, nama, peringkat, nilai_wp,

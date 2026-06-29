@@ -1,5 +1,6 @@
 from connection import connection_db
 from flask import session
+from user_helper import get_current_user_id
 
 LAUNDRY_RULES = {
     "basah": {
@@ -61,56 +62,11 @@ def get_recommendation(row):
     else:
         return "Pelanggan ini masih jarang laundry. Dorong supaya pelanggan ini tetap cuci di sini"
 
-# def get_last_ranking_session(nama_target=None):
-#     conn = connection_db()
-#     cursor = conn.cursor(dictionary=True)
-
-#     try:
-#         if nama_target:
-#             cursor.execute("""
-#                 SELECT s.* FROM chat_sessions s
-#                 JOIN chat_session_data d ON s.id = d.chat_id
-#                 WHERE s.type = 'ranking' AND LOWER(d.nama) = LOWER(%s)
-#                 ORDER BY s.updated_at DESC, s.created_at DESC, s.id DESC
-#                 LIMIT 1
-#             """, (nama_target,))
-#         else:
-#             # UPDATE: Ditambahkan updated_at DESC dan id DESC
-#             cursor.execute("""
-#                 SELECT * FROM chat_sessions
-#                 WHERE type = 'ranking'
-#                 ORDER BY updated_at DESC, created_at DESC, id DESC
-#                 LIMIT 1
-#             """)
-            
-#         session = cursor.fetchone()
-
-#         if not session:
-#             return None, []
-
-#         cursor.execute("""
-#             SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal
-#             FROM chat_session_data
-#             WHERE chat_id = %s
-#             ORDER BY peringkat ASC
-#         """, (session["id"],))
-
-#         data = cursor.fetchall()
-#         return session, data
-
-#     finally:
-#         cursor.close()
-#         conn.close()
-
-
 def get_last_ranking_session(nama_target=None):
     conn = connection_db()
     cursor = conn.cursor(dictionary=True)
 
-    user_id = session.get("user_id")
-
-    if not user_id:
-        return None, []
+    user_id = get_current_user_id()
 
     try:
         if nama_target:

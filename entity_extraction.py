@@ -136,6 +136,17 @@ MONTH_DIGITS = {
 MONTH_RANGE_PATTERN = r"\b(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+(sampai|s\s*/\s*d|dan)\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\b"
 DIGIT_RANGE_PATTERN = r"\b(\d{1,2})\s+(sampai|s\s*/\s*d|dan)\s+(\d{1,2})\b"
 
+def convert_number(value):
+    angka_kata = {
+        "satu": 1, "dua": 2, "tiga": 3, "empat": 4, "lima": 5,
+        "enam": 6, "tujuh": 7, "delapan": 8, "sembilan": 9, "sepuluh": 10
+    }
+    if value is None:
+        return None
+    if str(value).isdigit():
+        return int(value)
+    return angka_kata.get(str(value).lower(), 10)
+
 def extract_customer_name(text, customer_list):
     for name in customer_list:
         pattern = r'\b' + re.escape(name) + r'\b'
@@ -196,7 +207,7 @@ def extract_entities(text):
         
         if temp in ["rajin", "sering", "aktif"]:
             normalized = "terbaik"
-        elif temp in ["jarang", "sedikit", "pasif"]:
+        elif temp in ["jarang", "sedikit", "pasif", "kurang aktif", "tidak aktif"]:
             normalized = "biasa"
         else:
             normalized = STATUS_NORMALIZATION.get(temp, temp)
@@ -228,6 +239,14 @@ def extract_entities(text):
     # JIKA USER MENGGUNAKAN FORMAT "N BULAN TERAKHIR", JANGAN EKSTRAK BULAN ANGKA!
     # Ini mencegah angka "3" dari "3 bulan" dibaca sebagai Maret (Bulan 3)
     is_time_value_active = len(entities["TIME_VALUE"]) > 0 and entities["TIME_UNIT"][0] == "bulan"
+
+    # Perbaikan proteksi kebocoran angka pelanggan ke bulan
+    result_count_digits = re.findall(RESULT_COUNT_PATTERN, text)
+    top_n_matches = re.findall(TOP_N_PATTERN, text)
+    excluded_digits = [x for x in result_count_digits]
+    for match in top_n_matches:
+        num = re.findall(r'\d+', match[0])
+        if num: excluded_digits.extend(num)
 
     if not is_time_value_active:
         range_match = re.search(MONTH_RANGE_PATTERN, text)
@@ -262,6 +281,8 @@ def extract_entities(text):
             # Cari angka bulan mandiri (1-12) yang bukan bagian dari tahun atau result count
             digit_matches = re.findall(r'\b\d{1,2}\b', text)
             for d in digit_matches:
+                if d in excluded_digits:
+                    continue
                 if d in MONTH_DIGITS:
                     # Pastikan bukan bagian dari angka tahun 2026
                     if not any(d in y for y in entities.get("YEAR", [])):
@@ -293,23 +314,29 @@ def extract_entities(text):
     for match in top:
         num = re.findall(r'\d+', match[0])
         if num: result.append(int(num[0]))
-    entities["RESULT_COUNT"] = sorted(set(result)) or [10]
+    
+    # RAPIKAN OUTPUT ENTITIES: Mengonversi value ke Tipe Data Tunggal / Bersih
+    raw_count = sorted(set(result)) or [10]
+    entities["RESULT_COUNT"] = convert_number(raw_count[0])
 
     entities["TIME_EXPRESSION"] = extract_multiple(text, TIME_EXPRESSION_SORTED)
     if entities["TIME_EXPRESSION"]:
         entities["TIME_EXPRESSION"] = [TIME_EXPRESSION_NORMALIZATION.get(exp, exp) for exp in entities["TIME_EXPRESSION"]]
 
     if entities["TIME_VALUE"]:
+        entities["TIME_VALUE"] = convert_number(entities["TIME_VALUE"][0])
         entities["TIME_EXPRESSION"] = []
+    else:
+        entities["TIME_VALUE"] = None
 
     time_normalized = None
     if entities["TIME_VALUE"] and entities["TIME_UNIT"]:
-        time_normalized = f"last_{entities['TIME_VALUE'][0]}_{entities['TIME_UNIT'][0]}"
+        time_normalized = f"last_{entities['TIME_VALUE']}_{entities['TIME_UNIT'][0]}"
     elif entities["TIME_EXPRESSION"]:
         time_normalized = TIME_NORMALIZATION_MAP.get(entities["TIME_EXPRESSION"][0])
     entities["TIME_NORMALIZED"] = time_normalized
 
     if entities["REASON"]:
-        entities["RESULT_COUNT"] = []
+        entities["RESULT_COUNT"] = 0
 
     return entities
