@@ -13,6 +13,8 @@ page_routes = Blueprint("page_routes", __name__)
 
 @page_routes.route("/chatbot")
 def chatbot_page():
+    if not session.get("is_login"):
+        return redirect("/")
     return render_template("chatbot/chatbot.html")
 
 @page_routes.route("/dashboard")
@@ -21,6 +23,8 @@ def dashboard_page():
 
 @page_routes.route("/input_kriteria", methods=["GET", "POST"])
 def input_kriteria():
+    if not session.get("is_login"):
+        return redirect("/")
     return input_kriteria_controller()
 
 @page_routes.route(
@@ -29,16 +33,19 @@ def input_kriteria():
 )
 def input_pelanggan():
 
+    if not session.get("is_login"):
+        return redirect("/")
+
     if request.method == "POST":
 
         nama = request.form.get("nama")
         jenis_cuci = request.form.get("jenis_cuci")
         
-        # 1. Ambil data mentah dari form HTML
+       
         berat_raw = request.form.get("berat")
         nominal_raw = request.form.get("nominal")
 
-        # 2. PENCEGAHAN BERAT: Jika kosong atau salah ketik, paksa jadi 0.0
+      
         if not berat_raw or berat_raw.strip() == "":
             berat = 0.0
         else:
@@ -47,7 +54,6 @@ def input_pelanggan():
             except ValueError:
                 berat = 0.0
 
-        # 3. PENCEGAHAN NOMINAL: Jika kosong atau salah ketik, paksa jadi angka 0
         if not nominal_raw or nominal_raw.strip() == "":
             nominal = 0
         else:
@@ -78,7 +84,7 @@ def input_pelanggan():
             VALUES (%s, %s, %s, %s, %s, %s)
         """
 
-        # Gunakan variabel nominal dan berat yang sudah aman di atas
+   
         values = (
             nama,
             nominal,
@@ -96,9 +102,7 @@ def input_pelanggan():
 
         return redirect("/dashboard")
 
-    # ====================================================
-    # PROSES GET (Membuka Halaman Form)
-    # ====================================================
+  
     nama = request.args.get("nama")
     pelanggan = None
 
@@ -137,10 +141,14 @@ def input_pelanggan():
 
 @page_routes.route("/search_pelanggan")
 def search_pelanggan():
+    if not session.get("is_login"):
+        return redirect("/")
     return search_pelanggan_controller()
 
 @page_routes.route("/data_pelanggan")
 def data_pelanggan():
+    if not session.get("is_login"):
+        return redirect("/")
     return data_pelanggan_controller()
 
 

@@ -6,9 +6,7 @@ def input_kriteria_controller():
     conn = connection_db()
     cursor = conn.cursor(dictionary=True)
 
-    # =========================
-    # GET
-    # =========================
+
     if request.method == "GET":
         query = """
             SELECT *
@@ -26,15 +24,11 @@ def input_kriteria_controller():
             bobot=bobot
         )
 
-    # =========================
-    # POST
-    # =========================
-    # Ambil data dari form HTML
+
     bobot_frekuensi = request.form.get("bobot_frekuensi")
     bobot_total_nominal = request.form.get("bobot_total_nominal")
     bobot_jenis_cuci = request.form.get("bobot_jenis_cuci")
 
-    # Query UPDATE yang bersih tanpa bobot_total_kg
     query = """
         UPDATE bobot_kriteria
         SET

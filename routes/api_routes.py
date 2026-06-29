@@ -11,10 +11,8 @@ def chat():
 
     data = request.json
     text = data.get("message", "")
-    # Tangkap chat_id yang dikirim dari JavaScript browser
     chat_id = data.get("chat_id")
 
-    # --- LANGKAH 1: VALIDASI AWAL ---
     is_valid, error_msg = validate_message(text)
 
     if not is_valid:
@@ -27,17 +25,14 @@ def chat():
             }
         })
 
-    # --- LANGKAH 2: PROSES NAIVE BAYES ---
     results = classify_intents(text)
 
     r = results[0]
 
     entities = r["entities"]
 
-    # Masukkan chat_id ke dalam entities agar bisa dibaca oleh script lainnya
     entities["CHAT_ID"] = chat_id
 
-    # Proses ke Router
     response = intent_router(r["intent"], entities)
 
     return jsonify({

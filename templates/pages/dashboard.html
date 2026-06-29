@@ -6,7 +6,6 @@ Dashboard
 
 {% block content %}
 
-
 <style>
 .header_page {
     height: 100dvh;
@@ -18,7 +17,6 @@ Dashboard
     overflow: hidden;
 }
 
-/* 🔵 header biru */
 .header {
     height: 220px;
     padding: 25px 20px;
@@ -30,7 +28,6 @@ Dashboard
     position: relative;
 }
 
-/* bagian uang */
 .money {
     display: flex;
     flex-direction: column;
@@ -47,14 +44,12 @@ Dashboard
     margin-top: -15px;
 }
 
-/* greeting */
 .greeting {
     margin-top: 20px;
     font-size: 22px;
     font-weight: 600;
 }
 
-/* ⚪ card putih */
 .cards {
     margin-top :50px;
     width: 100%;
@@ -144,10 +139,6 @@ Dashboard
     object-fit: contain;
 }
 
-/* =========================
-   LOGOUT BUTTON
-========================= */
-
 .logout-btn {
     position: absolute;
     top: 20px;
@@ -178,9 +169,6 @@ Dashboard
     height: 22px;
 }
 
-/* =========================
-   MODAL LOGOUT
-========================= */
 
 .logout-modal {
     position: fixed;
@@ -360,10 +348,8 @@ Dashboard
 
 <div class="header_page">
 
-    <!-- Header biru -->
     <div class="header">
 
-        <!-- BUTTON LOGOUT -->
         <a href="#" class="logout-btn" onclick="showLogoutModal()">
             <img src="{{ url_for('static', filename='images/logout_1.png') }}" alt="logout">
         </a>
@@ -376,7 +362,8 @@ Dashboard
             </h2>
         </div>
 
-        <h1 class="greeting">Halo, Suwarsih</h1>
+        <!-- <h1 class="greeting">Halo, Suwarsih</h1> -->
+        <h1 class="greeting">Halo, {{ nama }}</h1>
 
     </div>
 
@@ -431,7 +418,6 @@ Dashboard
 
 </div>
 
-<!-- MODAL LOGOUT -->
 <div id="logoutModal" class="logout-modal">
 
     <div class="logout-modal-content">

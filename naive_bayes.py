@@ -1,21 +1,18 @@
 import re
 import pandas as pd
+import time
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from function_rangking_pelanggan import evaluate_weighted_product
 
 from entity_extraction import extract_entities, clean_text
 from connection import connection_db
 from router import intent_router
 
-# ===========================
-# CONNECTION
-# ===========================
 conn = connection_db()
 
-# ===========================
-# PREPROCESS FUNCTION
-# ===========================
+
 def preprocess(sentence):
 
     sentence = clean_text(sentence)
@@ -23,9 +20,7 @@ def preprocess(sentence):
     return sentence.strip()
 
 
-# ===========================
 # TRAINING MODEL
-# ===========================
 query = "SELECT kalimat, intent FROM dataset_intent_2"
 
 df = pd.read_sql(query, conn)
@@ -35,10 +30,7 @@ sentences = df['kalimat'].apply(preprocess).tolist()
 labels = df['intent'].tolist()
 
 
-# ===========================
 # TFIDF VECTORIZER
-# unigram + bigram
-# ===========================
 vectorizer = TfidfVectorizer(
     ngram_range=(1, 2)
 )
@@ -46,23 +38,14 @@ vectorizer = TfidfVectorizer(
 X = vectorizer.fit_transform(sentences)
 
 
-# ===========================
 # TRAIN MODEL
-# ===========================
 model = MultinomialNB()
 
 model.fit(X, labels)
 
 
-# ===========================
-# RULE BASED INTENT
-# ===========================
 def rule_based_intent(processed):
 
-    # ====================================
-    # PRIORITY 1
-    # TANYA ALASAN
-    # ====================================
 
     alasan_keywords = [
         "kenapa",
@@ -80,11 +63,6 @@ def rule_based_intent(processed):
         "bonus"
     ]
 
-    # ====================================
-    # SPECIAL CASE
-    # contoh:
-    # kenapa pelanggan dapat reward
-    # ====================================
     if (
         any(k in processed for k in alasan_keywords)
         and
@@ -92,16 +70,10 @@ def rule_based_intent(processed):
     ):
         return "INT_TANYA_ALASAN"
 
-    # ====================================
-    # NORMAL ALASAN
-    # ====================================
+
     if any(k in processed for k in alasan_keywords):
         return "INT_TANYA_ALASAN"
 
-    # ====================================
-    # PRIORITY 2
-    # REKOMENDASI HADIAH
-    # ====================================
     hadiah_full_keywords = [
         "hadiah",
         "reward",
@@ -115,10 +87,7 @@ def rule_based_intent(processed):
     if any(k in processed for k in hadiah_full_keywords):
         return "INT_REKOMENDASI_HADIAH"
 
-    # ====================================
-    # PRIORITY 3
-    # RANKING PELANGGAN
-    # ====================================
+
     ranking_keywords = [
         "siapa",
         "tampilkan",
@@ -142,9 +111,7 @@ def rule_based_intent(processed):
     return None
 
 
-# ===========================
 # CLASSIFY FUNCTION
-# ===========================
 def classify_intents(text):
 
     text = clean_text(text)
@@ -160,24 +127,13 @@ def classify_intents(text):
         if not part:
             continue
 
-        # ===========================
-        # ENTITY EXTRACTION
-        # ===========================
+   
         entities = extract_entities(part)
 
-        # ===========================
-        # PREPROCESS
-        # ===========================
         processed = preprocess(part)
 
-        # ===========================
-        # RULE BASED
-        # ===========================
         intent = rule_based_intent(processed)
 
-        # ===========================
-        # FALLBACK MACHINE LEARNING
-        # ===========================
         if intent is None:
 
             vec = vectorizer.transform([processed])
@@ -188,18 +144,11 @@ def classify_intents(text):
 
             predicted_intent = model.predict(vec)[0]
 
-            # ====================================
-            # kalau confidence terlalu rendah
-            # fallback default
-            # ====================================
             if max_prob < 0.45:
                 intent = "INT_RANKING_PELANGGAN"
             else:
                 intent = predicted_intent
 
-        # ===========================
-        # SAVE RESULT
-        # ===========================
         results.append({
             "kalimat": part,
             "intent": intent,
@@ -210,54 +159,80 @@ def classify_intents(text):
 
 
 
-# ===========================
 # TEST FROM EXCEL
-# ===========================
-# df_test = pd.read_excel("insert_data/check_question_addition_2.xlsx")
 
-# correct = 0
-# total = 0
+df_test = pd.read_excel("check_question_addition_uji_coba_entity.xlsx")
 
-# for index, row in df_test.iterrows():
+correct = 0
+total = 0
 
-#     text = row["kalimat"]
-#     expected_intent = row["intent"]
+for index, row in df_test.iterrows():
 
-#     results = classify_intents(text)
+    text = row["kalimat"]
+    expected_intent = row["intent"]
 
-#     for r in results:
+    result = classify_intents(text)
 
-#         total += 1
+    if isinstance(result, list):
+        result = result[0]  
 
-#         print("\n====================================")
-#         print("Kalimat :", r["kalimat"])
-#         print("Expected :", expected_intent)
-#         print("Predict  :", r["intent"])
+    predicted_intent = result["intent"]
 
-#         if r["intent"] == expected_intent:
-#             print("✅ BENAR")
-#             correct += 1
-#         else:
-#             print("❌ SALAH")
+    total += 1
 
-#         # entities
-#         for k, v in r["entities"].items():
+    print("\n====================================")
+    print("Kalimat :", text)
+    print("Expected :", expected_intent)
+    print("Predict  :", predicted_intent)
 
-#             if v:
-#                 print(k, ":", v)
+    if predicted_intent == expected_intent:
+        print("✅ BENAR")
+        correct += 1
 
-#         # response test
-#         response = intent_router(
-#             r['intent'],
-#             r['entities']
+    else:
+        print("❌ SALAH")
+
+    entities = result.get("entities", {})
+
+    for k, v in entities.items():
+        if v:
+            print(k, ":", v)
+
+    # =========================
+    # RESPONSE
+    # =========================
+    response = intent_router(
+        predicted_intent,
+        entities
+    )
+
+    print("response :", response)
+
+    time.sleep(0.5)
+
+
+# #     # for testing 
+#     if predicted_intent == "INT_RANKING_PELANGGAN":
+
+#         print("\n========== FULL RANKING (DEBUG) ==========")
+
+#         full_rank = evaluate_weighted_product(
+#             "2026-05-01",
+#             "2026-06-23"
 #         )
 
-#         print("response :", response)
+#         for i, r in enumerate(full_rank):
+#             print(
+#                 i + 1,
+#                 r["nama"],
+#                 "S:", round(r["score"], 2),
+#                 "V:", round(r["nilai_wp"], 4)
+#             )
 
 
-# ===========================
+
 # ACCURACY
-# ===========================
+
 # print("\n====================================")
 # print("TOTAL :", total)
 # print("BENAR :", correct)
@@ -275,26 +250,3 @@ def classify_intents(text):
 
 
 
-
-
-# ===========================
-# TEST SINGLE EXAMPLE
-# ===========================
-# text = "siapa pelanggan terbaik bulan ini" 
-
-# results = classify_intents(text)
-
-# for r in results:
-    
-#     print("\nKalimat :", r["kalimat"])  
-#     print("Intent :", r["intent"])
-
-#     # print("Entities :", r['entities'])
-
-#     for k, v in r["entities"].items():
-
-#         if v:
-#             print(" ", k, ":", v)
-
-#     response = intent_router(r['intent'], r['entities'])
-#     print("response",response)

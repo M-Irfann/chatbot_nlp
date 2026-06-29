@@ -50,6 +50,7 @@ FAPAKI Laundry
     .bot {
         align-self: flex-start;
         background-color: #ffffff;
+        border: 1px solid #eee;
     }
 
     .chat-header {
@@ -85,6 +86,58 @@ FAPAKI Laundry
         text-align: right;
     }
 
+    /* AREA REKOMENDASI PERTANYAAN (3 BARIS SCROLL MANDIRI) */
+    .suggestion-container {
+        padding: 10px 0 10px 15px;
+        background: #f9f9f9;
+        border-top: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .suggestion-title {
+        font-size: 11px;
+        color: #888;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+
+    .suggestion-buttons {
+        display: flex;
+        flex-wrap: nowrap; /* WAJIB: Mencegah tombol turun ke bawah */
+        overflow-x: auto;  /* WAJIB: Mengaktifkan scroll horizontal */
+        gap: 8px;
+        padding-right: 15px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Menyembunyikan scrollbar bawaan agar terlihat bersih di browser */
+    .suggestion-buttons::-webkit-scrollbar {
+        display: none;
+    }
+
+    .suggestion-btn {
+        background: white;
+        border: 1px solid #4c6edb;
+        color: #4c6edb;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        font-family: sans-serif;
+        transition: all 0.2s;
+        white-space: nowrap; /* WAJIB: Teks tidak boleh turun baris di dalam tombol */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .suggestion-btn:hover {
+        background: #4c6edb;
+        color: white;
+    }
+
     .chat-input {
         padding: 10px;
         border-top: 1px solid #eee;
@@ -98,36 +151,46 @@ FAPAKI Laundry
 
 <div class="chat-container">
 
-    <!-- HEADER -->
     <div class="chat-header">
         <a href="{{ url_for('page_routes.dashboard_page') }}" class="back-btn">←</a>
         <span class="title">FAPAKI Laundry</span>
     </div>
 
-    <!-- BODY -->
     <div class="chat-body" id="chatBody">
         <div class="message bot">
-            <b>Halo</b> ada yang bisa saya bantu?
+            <b>Halo</b> ada yang bisa saya bantu terkait analisis ranking, alasan, dan rekomendasi hadiah pelanggan?
         </div>
     </div>
 
-    <!-- INPUT -->
+    <div class="suggestion-container">
+        <div class="suggestion-title">💡 Rekomendasi Pertanyaan:</div>
+        
+        <div class="suggestion-buttons" style="margin-bottom: 5px;">
+            <button class="suggestion-btn" onclick="fillAndSubmit('Siapa pelanggan terbaik dalam 3 bulan ini?')">Siapa pelanggan terbaik dalam 3 bulan ini?</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('Tolong berikan siapa nama pelanggan terbaik 2 bulan ini')">Tolong berikan siapa nama pelanggan terbaik 2 bulan ini</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('Cek daftar ranking pelanggan terbaik bulan ini')">Cek daftar ranking pelanggan terbaik bulan ini</button>
+        </div>
+
+        <div class="suggestion-buttons" style="margin-bottom: 5px;">
+            <button class="suggestion-btn" onclick="fillAndSubmit('Kenapa dia bisa menjadi pelanggan terbaik?')">Kenapa dia bisa menjadi pelanggan terbaik?</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('Apa alasan pelanggan tersebut menempati peringkat teratas?')">Apa alasan pelanggan tersebut menempati peringkat teratas?</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('')"></button>
+        </div>
+
+        <div class="suggestion-buttons">
+            <button class="suggestion-btn" onclick="fillAndSubmit('Apa saran rekomendasi hadiah untuk pelanggan ini?')">Apa saran rekomendasi hadiah untuk pelanggan ini?</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('Berikan rekomendasi bonus yang cocok untuk pelanggan terbaik')">Berikan rekomendasi bonus yang cocok untuk pelanggan terbaik</button>
+            <button class="suggestion-btn" onclick="fillAndSubmit('Tampilkan customer yang jarang cuci di bulan ini')">Tampilkan customer yang jarang cuci di bulan ini</button>
+        </div>
+    </div>
+
     <div class="chat-input">
-
         <form id="chatForm">
-
             <div class="input-group">
-
                 <input type="text" id="messageInput" class="form-control" placeholder="Ketik pesan...">
-
-                <button class="btn btn-primary">
-                    Send
-                </button>
-
+                <button class="btn btn-primary">Send</button>
             </div>
-
         </form>
-
     </div>
 
 </div>
@@ -136,6 +199,12 @@ FAPAKI Laundry
     const form = document.getElementById("chatForm");
     const input = document.getElementById("messageInput");
     const chatBody = document.getElementById("chatBody");
+
+    function fillAndSubmit(text) {
+        if (!text.trim()) return; 
+        input.value = text;
+        input.focus();
+    }
 
     function addMessage(text, type) {
         const messageEl = document.createElement("div");
@@ -170,104 +239,79 @@ FAPAKI Laundry
         addMessage(message, "user");
         input.value = "";
 
-        // 1. Ambil chat_id terakhir yang disimpan di browser (jika ada)
         let activeChatId = sessionStorage.getItem("active_chat_id") || null;
 
         try {
             let res = await fetch("/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                // 2. Kirim message dan chat_id ke api_routes.py
                 body: JSON.stringify({ message: message, chat_id: activeChatId })
             });
 
             let data = await res.json();
-            
-            // Sesuai struktur return api_routes.py
             let resp = data.response || data;
 
-            // 3. Jika backend mengembalikan chat_id baru (dari proses ranking), simpan ke browser
             if (resp.chat_id) {
                 sessionStorage.setItem("active_chat_id", resp.chat_id);
             }
 
             let botText = "";
-
             const hasArray = Array.isArray(resp.data);
             const first = hasArray ? resp.data[0] : null;
 
-            // ====================================================
-            // 🎁 1. MENU TANYA HADIAH & REKOMENDASI (DORONGAN)
-            // ====================================================
+            // 1. Kondisi untuk Rekomendasi Hadiah & Alasan
             if (hasArray && first && first.rekomendasi !== undefined) {
                 botText += `🎁 ${resp.summary || ""}\n\n`;
-
                 resp.data.forEach(item => {
                     botText += `${item.peringkat}. ${item.nama}\n`;
-
                     if (item.hadiah && item.hadiah !== "TIDAK_DAPAT_HADIAH") {
                         botText += `🎁 ${item.hadiah}\n`;
                     }
-
                     if (item.rekomendasi) {
                         botText += `💡 ${item.rekomendasi}\n`;
                     }
-
                     if (item.alasan) {
                         botText += `👉 ${item.alasan}\n`;
                     }
-
                     botText += `────────────────\n`;
                 });
             }
-
-            // ====================================================
-            // 2. MENU PENJELASAN / ALASAN (MURNI TANPA REKOMENDASI)
-            // ====================================================
+            // 2. Kondisi untuk Alasan Peringkat saja
             else if (hasArray && first && first.alasan) {
                 botText += `💡 ${resp.summary || ""}\n\n`;
-
                 resp.data.forEach(item => {
                     botText += `${item.peringkat}. ${item.nama}\n👉 ${item.alasan}\n\n`;
                 });
             }
-
-            // ====================================================
-            // 3. MENU RANKING / DAFTAR TERBAIK
-            // ====================================================
+            // 3. Kondisi untuk Ranking Objek (WP)
             else if (resp.data && typeof resp.data === "object" && !hasArray) {
                 const keys = Object.keys(resp.data);
-
                 if (keys.length > 0) {
                     const firstKey = keys[0];
                     const firstGroup = resp.data[firstKey];
-
                     botText += `🏆 DAFTAR ${firstKey.toUpperCase()}:\n📅 ${resp.summary || ""}\n\n`;
-
-                    // Penyesuaian membaca inner structure data jika ada key 'detail'
                     const list = firstGroup?.detail?.data || firstGroup?.data || [];
                     list.forEach((item, i) => {
-                        let wp = item.nilai_wp
-                            ? Number(item.nilai_wp).toFixed(4)
-                            : "0.0000";
-
+                        let wp = item.nilai_wp ? Number(item.nilai_wp).toFixed(4) : "0.0000";
                         botText += `${i + 1}. ${item.nama} (WP: ${wp})\n`;
                     });
                 }
             }
+            // 4. Kondisi jika respon hanya pesan teks biasa dari backend
+            else if (resp.message) {
+                botText = resp.message;
+            }
 
-            // ====================================================
-            // ❌ 4. DATA TIDAK DITEMUKAN
-            // ====================================================
-            else {
-                botText = resp.message || "Data tidak ditemukan";
+            // Pengecekan Akhir: Jika botText ternyata kosong atau tidak masuk ke kondisi mana pun
+            if (!botText || botText.trim() === "" || botText === "Data tidak ditemukan") {
+                botText = "Coba lagi";
             }
 
             addMessage(botText, "bot");
 
         } catch (err) {
             console.log(err);
-            addMessage("Terjadi kesalahan koneksi.", "bot");
+            addMessage("🤖 Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi.", "bot");
         }
     });
 </script>

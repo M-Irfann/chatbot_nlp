@@ -12,8 +12,10 @@ conn = mysql.connector.connect(
 cursor = conn.cursor()
 
 # baca file excel
-# df = pd.read_excel("data_pelanggan.xlsx")
+# df = pd.read_excel("data_pelanggan_sebagian_5_2.xlsx")
 
+df.columns = df.columns.str.strip()
+# print(df.columns.tolist())
 # loop insert
 for index, row in df.iterrows():
 
@@ -26,7 +28,7 @@ for index, row in df.iterrows():
 
 
     query = """
-    INSERT INTO planggan (nama, nominal, jenis_cuci, berat, tanggal)
+    INSERT INTO pelanggan (nama, nominal, jenis_cuci, berat, tanggal)
     VALUES (%s, %s, %s, %s, %s)
     """
 

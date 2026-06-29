@@ -127,7 +127,6 @@ FAPAKI Laundry
 
 <div class="header_page">
 
-    <!-- Header biru -->
     <div class="header">
         <a href="{{ url_for('page_routes.dashboard_page') }}" class="back-btn">←</a>
         <h3>Input Data Pelanggan</h3>
@@ -217,17 +216,14 @@ const hargaDisplay = document.getElementById("hargaDisplay")
 const hargaAsli = document.getElementById("hargaAsli")
 const beratInput = document.getElementById("beratInput")
 
-// 1. Logika Format Harga Rupiah dengan proteksi nilai kosong
 hargaDisplay.addEventListener("input", function(){
     let angka = this.value.replace(/[^0-9]/g, '')
     
-    // PENCEGAHAN: Jika kosong, ubah jadi "0" agar tidak error di database
     hargaAsli.value = angka ? angka : "0";
 
     this.value = angka ? new Intl.NumberFormat('id-ID').format(angka) : "";
 })
 
-// 2. Logika Otomatis Mengubah Koma ke Titik pada Berat
 beratInput.addEventListener("input", function(){
     let value = this.value.replace(/,/g, '.');
     value = value.replace(/[^0-9.]/g, '');

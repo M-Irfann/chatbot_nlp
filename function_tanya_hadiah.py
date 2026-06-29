@@ -1,8 +1,6 @@
 from connection import connection_db
+from flask import session
 
-# =========================
-# RULE LAUNDRY
-# =========================
 LAUNDRY_RULES = {
     "basah": {
         "min_freq": 5,
@@ -21,18 +19,10 @@ LAUNDRY_RULES = {
     }
 }
 
-# =========================
-# REASON ENGINE (KITA KOSONGKAN AGAR TIDAK MENGULANG ANGKA)
-# =========================
 def build_reason(row):
-    # Di menu hadiah, owner tidak butuh rumus matematika lagi. 
-    # Cukup kembalikan string kosong agar tampilan chat bersih.
     return ""
 
 
-# =========================
-# DETEKSI LEVEL SERVICE
-# =========================
 def get_service_level(row):
     freq = row.get("frekuensi", 0)
 
@@ -46,9 +36,6 @@ def get_service_level(row):
         return None
 
 
-# =========================
-# REWARD LOGIC 
-# =========================
 def get_reward(rank, row):
     service = get_service_level(row)
 
@@ -58,9 +45,7 @@ def get_reward(rank, row):
     return f"Gratis {service['label']}"
 
 
-# =========================
-# REKOMENDASI TINDAKAN UNTUK OWNER (DIUBAH KE BAHASA SEDERHANA)
-# =========================
+
 def get_recommendation(row):
     freq = row.get("frekuensi", 0)
 
@@ -76,54 +61,113 @@ def get_recommendation(row):
     else:
         return "Pelanggan ini masih jarang laundry. Dorong supaya pelanggan ini tetap cuci di sini"
 
+# def get_last_ranking_session(nama_target=None):
+#     conn = connection_db()
+#     cursor = conn.cursor(dictionary=True)
 
-# =========================
-# AMBIL SESSION
-# =========================
+#     try:
+#         if nama_target:
+#             cursor.execute("""
+#                 SELECT s.* FROM chat_sessions s
+#                 JOIN chat_session_data d ON s.id = d.chat_id
+#                 WHERE s.type = 'ranking' AND LOWER(d.nama) = LOWER(%s)
+#                 ORDER BY s.updated_at DESC, s.created_at DESC, s.id DESC
+#                 LIMIT 1
+#             """, (nama_target,))
+#         else:
+#             # UPDATE: Ditambahkan updated_at DESC dan id DESC
+#             cursor.execute("""
+#                 SELECT * FROM chat_sessions
+#                 WHERE type = 'ranking'
+#                 ORDER BY updated_at DESC, created_at DESC, id DESC
+#                 LIMIT 1
+#             """)
+            
+#         session = cursor.fetchone()
+
+#         if not session:
+#             return None, []
+
+#         cursor.execute("""
+#             SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal
+#             FROM chat_session_data
+#             WHERE chat_id = %s
+#             ORDER BY peringkat ASC
+#         """, (session["id"],))
+
+#         data = cursor.fetchall()
+#         return session, data
+
+#     finally:
+#         cursor.close()
+#         conn.close()
+
+
 def get_last_ranking_session(nama_target=None):
     conn = connection_db()
     cursor = conn.cursor(dictionary=True)
 
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None, []
+
     try:
         if nama_target:
             cursor.execute("""
-                SELECT s.* FROM chat_sessions s
-                JOIN chat_session_data d ON s.id = d.chat_id
-                WHERE s.type = 'ranking' AND LOWER(d.nama) = LOWER(%s)
-                ORDER BY s.created_at DESC
+                SELECT s.*
+                FROM chat_sessions s
+                JOIN chat_session_data d
+                    ON s.id = d.chat_id
+                WHERE s.type = 'ranking'
+                  AND s.user_id = %s
+                  AND LOWER(d.nama) = LOWER(%s)
+                ORDER BY s.updated_at DESC,
+                         s.created_at DESC,
+                         s.id DESC
                 LIMIT 1
-            """, (nama_target,))
+            """, (user_id, nama_target))
+
         else:
             cursor.execute("""
-                SELECT * FROM chat_sessions
+                SELECT *
+                FROM chat_sessions
                 WHERE type = 'ranking'
-                ORDER BY created_at DESC
+                  AND user_id = %s
+                ORDER BY updated_at DESC,
+                         created_at DESC,
+                         id DESC
                 LIMIT 1
-            """)
-            
-        session = cursor.fetchone()
+            """, (user_id,))
 
-        if not session:
+        session_data = cursor.fetchone()
+
+        if not session_data:
             return None, []
 
         cursor.execute("""
-            SELECT nama, peringkat, nilai_wp, frekuensi, total_nominal
+            SELECT
+                nama,
+                peringkat,
+                nilai_wp,
+                frekuensi,
+                total_nominal
             FROM chat_session_data
             WHERE chat_id = %s
             ORDER BY peringkat ASC
-        """, (session["id"],))
+        """, (session_data["id"],))
 
         data = cursor.fetchall()
-        return session, data
+
+        return session_data, data
 
     finally:
         cursor.close()
         conn.close()
 
 
-# =========================
-# MAIN HANDLER
-# =========================
+# main handle
+
 def handle_tanya_hadiah(entities):
     nama_target = None
     if entities.get("CUSTOMER_NAME"):
@@ -139,9 +183,6 @@ def handle_tanya_hadiah(entities):
         "akhir": str(session["periode_akhir"])
     }
 
-    # =========================
-    # SINGLE CUSTOMER
-    # =========================
     if nama_target:
         for i, row in enumerate(all_data):
             if row["nama"].lower() == nama_target.lower():
@@ -159,9 +200,7 @@ def handle_tanya_hadiah(entities):
 
         return {"message": f"{nama_target} tidak ditemukan dalam ranking."}
 
-    # =========================
-    # ALL CUSTOMER
-    # =========================
+
     result = []
     for i, row in enumerate(all_data):
         rank = i + 1
